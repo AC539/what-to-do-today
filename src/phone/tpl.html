@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#FFE1EE">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="今天干嘛">
+<meta name="format-detection" content="telephone=no">
+<title>今天干嘛</title>
+<style>
+/*CSS*/
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <span class="float-emoji" style="top:7%;left:2px">✨</span>
+  <span class="float-emoji" style="top:13%;right:5px;animation-delay:1.2s">🌟</span>
+  <span class="float-emoji" style="top:6%;left:53%;animation-delay:.6s">🎲</span>
+  <span class="float-emoji" style="bottom:8%;right:6px;animation-delay:1.8s">🍜</span>
+  <span class="float-emoji" style="bottom:4%;left:10px;animation-delay:2.4s">⭐</span>
+
+  <div class="topbar">
+    <div class="date-pill" id="dt">—</div>
+    <button class="icon-btn" id="btnSnd" type="button" aria-label="声音开关">🔊</button>
+  </div>
+
+  <div class="marea">
+    <div class="machine" id="machine">
+
+      <div class="ear l"></div>
+      <div class="ear r"></div>
+
+      <div class="marquee">
+        <div class="bulbs" id="bulbsTop"></div>
+        <div class="mtitle">今天干嘛</div>
+        <div class="msub">WHAT TO DO TODAY</div>
+        <div class="bulbs" id="bulbsBot"></div>
+      </div>
+
+      <div class="face">
+        <div class="st s1"></div><div class="st s2"></div><div class="st s3"></div>
+        <div class="st s4"></div><div class="st s5"></div><div class="st s6"></div>
+        <div class="eye l"><i></i></div>
+        <div class="eye r"><i></i></div>
+        <div class="blush l"></div><div class="blush r"></div>
+        <div class="nose"></div>
+        <div class="mouth"></div>
+      </div>
+
+      <div class="rlabels">
+        <span class="rl p">上午玩</span>
+        <span class="rl e">中午吃</span>
+        <span class="rl p">下午玩</span>
+        <span class="rl e">晚上吃</span>
+      </div>
+
+      <div class="winwrap">
+        <div class="reels-window" id="reels">
+          <div class="reel" data-type="p" data-label="上午玩"><div class="strip"></div></div>
+          <div class="reel" data-type="e" data-label="中午吃"><div class="strip"></div></div>
+          <div class="reel" data-type="p" data-label="下午玩"><div class="strip"></div></div>
+          <div class="reel" data-type="e" data-label="晚上吃"><div class="strip"></div></div>
+          <span class="pay-arrow l">▶</span>
+          <span class="pay-arrow r">◀</span>
+        </div>
+        <div class="lever" id="lever">
+          <div class="lever-base"></div>
+          <div class="stick"><div class="ball"></div></div>
+        </div>
+      </div>
+
+      <div class="win-banner" id="banner">拉下拉杆，好运降临～</div>
+
+      <div class="controls">
+        <button class="spin" id="btnPull" type="button">
+          <span class="txt">拉一下</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="cta">
+    <button class="detail" id="btnDetail" type="button">
+      <span>看今天的安排</span>
+      <svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+</div>
+
+<!-- ===== 详情卡片：从底部升起，摊开一整天 ===== -->
+<div class="sheet-mask" id="sheetMask"></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="今天的安排" aria-hidden="true">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head">
+    <div class="sh-txt">
+      <div class="sh-t">今天的安排</div>
+      <div class="sh-s" id="sheetSub">—</div>
+    </div>
+    <button class="sh-close" id="sheetClose" type="button" aria-label="关闭">✕</button>
+  </div>
+  <div class="sheet-body" id="sheetBody"></div>
+  <div class="sheet-foot">
+    <button class="sh-again" id="sheetAgain" type="button">再摇一天</button>
+  </div>
+</section>
+
+<div id="toast"></div>
+<div class="confetti-layer" id="confettiLayer"></div>
+
+<script>
+/*POOL*/
+</script>
+<script>
+/*APP*/
+</script>
+</body>
+</html>

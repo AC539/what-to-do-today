@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FBF8F3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="今天干嘛">
+<title>今天干嘛</title>
+<style>
+/*CSS*/
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="top">
+    <h1>今天干嘛<small>TIAN GANMA</small></h1>
+    <div class="date"><b id="dToday">—</b><span id="dWeek">—</span></div>
+  </div>
+
+  <main>
+    <section id="pgRoll">
+
+      <div class="card cond" id="condCard">
+        <div class="cond-head" id="condHead">
+          <h2><span class="cond-dot"></span>今天什么情况</h2>
+          <span class="cond-sum" id="condSum"></span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="cond-body">
+          <div class="row"><label>活动范围</label><div class="chips" data-k="scope">
+            <button class="chip" data-v="city">主城区</button>
+            <button class="chip" data-v="near">含近郊</button>
+            <button class="chip" data-v="any">不限</button>
+          </div></div>
+          <div class="row"><label>怎么去</label><div class="chips" data-k="traffic">
+            <button class="chip" data-v="car">开车</button>
+            <button class="chip" data-v="metro">地铁</button>
+            <button class="chip" data-v="walk">走路</button>
+          </div></div>
+          <div class="row"><label>人均预算</label><div class="chips" data-k="budget">
+            <button class="chip" data-v="0">不限</button>
+            <button class="chip" data-v="1">50 内</button>
+            <button class="chip" data-v="2">100 内</button>
+            <button class="chip" data-v="3">200 内</button>
+          </div></div>
+          <div class="row"><label>今天的状态</label><div class="chips" data-k="energy">
+            <button class="chip" data-v="chill">躺平</button>
+            <button class="chip" data-v="any">随便</button>
+            <button class="chip" data-v="active">想动</button>
+          </div></div>
+          <div class="row"><label>玩多久</label><div class="chips" data-k="len">
+            <button class="chip" data-v="full">一整天</button>
+            <button class="chip" data-v="half">半天</button>
+          </div></div>
+          <div class="row"><label>摇过的</label><div class="chips" data-k="repeat">
+            <button class="chip" data-v="norepeat">不再出现</button>
+            <button class="chip" data-v="allow">允许重复</button>
+          </div></div>
+          <div class="row">
+            <label>附近实时数据（可选）</label>
+            <input type="password" id="amapKey" placeholder="高德 Web 服务 Key，不填就用本地池">
+            <div class="btn-row">
+              <button class="btn-g" id="btnLive">拉取附近</button>
+              <button class="btn-g" id="btnLiveClear">清空实时数据</button>
+            </div>
+            <div class="note" id="liveNote">不填也能用。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="machine" id="machine">
+        <div class="machine-t">
+          <span class="lb">摇出你们的一天</span>
+          <span class="hint">点某一格可单独换</span>
+        </div>
+        <div class="reels" id="reels">
+          <div class="reel" data-type="p" data-label="上午 · 玩"><div class="strip"></div></div>
+          <div class="reel" data-type="e" data-label="中午 · 吃"><div class="strip"></div></div>
+          <div class="reel" data-type="p" data-label="下午 · 玩"><div class="strip"></div></div>
+        </div>
+        <div class="lever" id="lever"><div class="knob"></div><div class="stick"></div></div>
+        <button class="spin-btn" id="btnSpin">拉 一 下</button>
+      </div>
+
+      <div class="card">
+        <div class="card-t">
+          <h2>今天这样过</h2>
+          <span class="lnk" id="planCount"></span>
+        </div>
+        <div id="planBox"><div class="plan-empty">还没摇。<br>拉一下那根杆，今天就不用想了。</div></div>
+        <div class="plan-acts" id="planActs" style="display:none">
+          <button id="btnRerollAll">全部重摇</button>
+          <button id="btnCopyPlan">复制计划</button>
+          <button class="pri" id="btnSaveCombo">存进池子</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="pgIdea" class="hide">
+      <div class="card">
+        <div class="card-t"><h2>粘贴一个点子进来</h2></div>
+        <textarea id="pasteBox" placeholder="刷到好玩的、朋友推荐的，直接粘在这里。一行一个，用句号分开也行。"></textarea>
+        <div class="btn-row">
+          <button class="btn-sec" id="btnPasteClear">清空</button>
+          <button class="btn-pri" id="btnParse">解析成条目</button>
+        </div>
+      </div>
+
+      <div class="card" id="candCard" style="display:none">
+        <div class="card-t"><h2>待确认</h2><span class="lnk" id="candCount"></span></div>
+        <div id="candBox"></div>
+        <div class="btn-row"><button class="btn-pri" id="btnCandAll">全部加进池子</button></div>
+      </div>
+
+      <div class="card">
+        <div class="card-t"><h2>换一批灵感</h2><span class="lnk" id="btnMoreIdeas">换一批</span></div>
+        <div id="ideaBox"></div>
+        <div class="note">标「报道」的是从公开报道整理的，标「AI」的是生成的。去之前都建议先搜一下确认还在不在。</div>
+      </div>
+    </section>
+
+    <section id="pgPool" class="hide">
+      <div class="card">
+        <input type="text" id="poolSearch" placeholder="搜名字 / 区域 / 标签" style="margin-bottom:12px">
+        <div class="seg" id="poolSeg">
+          <button class="on" data-v="all">全部</button>
+          <button data-v="p">玩的</button>
+          <button data-v="e">吃的</button>
+          <button data-v="u">我加的</button>
+          <button data-v="x">拉黑</button>
+        </div>
+        <div id="poolBox"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-t"><h2>手动加一条</h2></div>
+        <input type="text" id="addName" placeholder="名字，比如「家楼下新开的串串」">
+        <div class="chips" id="addType" style="margin-top:10px">
+          <button class="chip on" data-v="p">玩的</button>
+          <button class="chip" data-v="e">吃的</button>
+        </div>
+        <div class="btn-row"><button class="btn-pri" id="btnAdd">加进池子</button></div>
+      </div>
+
+      <div class="card">
+        <div class="card-t"><h2>收藏的组合</h2><span class="lnk" id="comboClear">清空</span></div>
+        <div id="comboBox"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-t"><h2>维护</h2></div>
+        <div class="btn-row">
+          <button class="btn-sec" id="btnResetRecent">清空「摇过的」</button>
+          <button class="btn-sec" id="btnResetAll">恢复出厂</button>
+        </div>
+        <div class="note" id="statNote"></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="nav" id="nav">
+    <button data-p="roll" class="on">
+      <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" stroke-width="1.7"/><circle cx="8.5" cy="12" r="1.6" fill="currentColor"/><circle cx="15.5" cy="12" r="1.6" fill="currentColor"/></svg>
+      <span>摇一摇</span>
+    </button>
+    <button data-p="idea">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3a6 6 0 0 0-3.3 11v2h6.6v-2A6 6 0 0 0 12 3Z" stroke="currentColor" stroke-width="1.7"/><path d="M10 19h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      <span>灵感</span>
+    </button>
+    <button data-p="pool">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5h16M4 12h16M4 16.5h10" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+      <span>池子</span>
+    </button>
+  </nav>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/*POOL*/
+</script>
+<script>
+/*IDEAS*/
+</script>
+<script>
+/*APP*/
+</script>
+</body>
+</html>

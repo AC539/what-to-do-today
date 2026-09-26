@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FF9E4F">
+<title>今天干嘛 · 摇一下，今天不用想</title>
+<meta name="description" content="「今天干嘛」：拉一下拉杆，随机摇出今天的玩法和吃法。成都本地内容池，纯静态页面，不联网、不上传任何数据。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23FF9E4F'/%3E%3Ccircle cx='22' cy='28' r='7' fill='%23fff'/%3E%3Ccircle cx='42' cy='28' r='7' fill='%23fff'/%3E%3Ccircle cx='22' cy='29' r='3' fill='%234A2C17'/%3E%3Ccircle cx='42' cy='29' r='3' fill='%234A2C17'/%3E%3Cpath d='M32 36l4 4-4 4-4-4z' fill='%23F4517F'/%3E%3C/svg%3E">
+<style>
+:root{
+  --orange:#FF9E4F; --orange-d:#E07B2E; --pink:#FF8FB1; --pink-d:#F4517F;
+  --cream:#FFF6E5; --brown:#7A4A21; --yellow:#FFE27A; --ink3:#B99169;
+  --cute:"Yuanti SC","YouYuan","ZCOOL KuaiLe","PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  min-height:100dvh;color:var(--brown);
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.55) 2.5px, transparent 3px) 0 0/30px 30px,
+    linear-gradient(165deg,#FFF6DE 0%,#FFE1EE 55%,#DDF2FF 100%);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased;
+  display:flex;justify-content:center;
+  padding:calc(env(safe-area-inset-top,0px) + 26px) 18px calc(env(safe-area-inset-bottom,0px) + 30px);
+}
+.wrap{width:100%;max-width:520px;display:flex;flex-direction:column;gap:20px}
+
+/* ---- 招牌 ---- */
+.board{
+  position:relative;background:var(--cream);border-radius:26px;
+  padding:16px 16px 14px;text-align:center;
+  border:4px solid rgba(255,255,255,.8);
+  box-shadow:0 10px 24px rgba(180,90,60,.18), inset 0 3px 8px rgba(150,80,20,.14);
+}
+.bulbs{display:flex;justify-content:space-between;padding:0 4px}
+.bulbs span{width:8px;height:8px;border-radius:50%;background:var(--yellow);animation:glow 1.2s ease-in-out infinite alternate}
+.bulbs span:nth-child(even){background:#FFAFCE;animation-delay:.6s}
+.bulbs:last-child{margin-top:10px}
+@keyframes glow{from{opacity:.35}to{opacity:1;box-shadow:0 0 8px 2px rgba(255,200,90,.85)}}
+.title{
+  font-family:var(--cute);font-size:44px;font-weight:700;color:#E2683C;
+  letter-spacing:6px;line-height:1.1;margin:10px 0 4px;text-shadow:0 3px 0 #FFE3C2;
+}
+.sub{font-size:10px;font-weight:800;letter-spacing:4px;color:#C98B4E}
+.slogan{
+  font-family:var(--cute);font-size:17px;font-weight:700;color:#8A5A2E;
+  margin-top:12px;line-height:1.6;
+}
+
+/* ---- 入口按钮 ---- */
+.doors{display:flex;flex-direction:column;gap:13px}
+a.door{
+  display:flex;align-items:center;gap:14px;text-decoration:none;
+  padding:18px 20px;border-radius:22px;border:4px solid #fff;
+  transition:transform .1s, box-shadow .1s;
+}
+a.door .em{font-size:30px;line-height:1;flex:0 0 auto}
+a.door .tx{flex:1;min-width:0}
+a.door .t1{display:block;font-family:var(--cute);font-size:20px;font-weight:700;letter-spacing:1px}
+a.door .t2{display:block;font-size:12px;font-weight:700;opacity:.75;margin-top:5px;letter-spacing:.3px;line-height:1.5}
+a.door .arr{font-size:22px;font-weight:800;opacity:.7}
+.door.play{background:linear-gradient(180deg,#FF9FB2,#F4517F);color:#fff;box-shadow:0 6px 0 #C93A64, 0 14px 20px rgba(200,60,100,.24)}
+.door.play:active{transform:translateY(5px);box-shadow:0 1px 0 #C93A64}
+.door.desk{background:linear-gradient(180deg,#FFD98A,#FFB03A);color:#8A4A12;box-shadow:0 6px 0 #D97A2B, 0 14px 20px rgba(150,70,10,.2)}
+.door.desk:active{transform:translateY(5px);box-shadow:0 1px 0 #D97A2B}
+.hint{
+  text-align:center;font-size:12px;font-weight:700;color:var(--ink3);
+  letter-spacing:.3px;margin-top:-6px;
+}
+
+/* ---- 说明卡 ---- */
+.card{
+  background:rgba(255,255,255,.78);border:3px solid #fff;border-radius:22px;
+  padding:16px 18px;box-shadow:0 6px 16px rgba(180,110,40,.12);
+}
+.card h2{
+  margin:0 0 10px;font-size:14px;font-weight:800;color:#A56A2C;letter-spacing:1px;
+  font-family:var(--cute);
+}
+.card ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px}
+.card li{font-size:13.5px;font-weight:600;line-height:1.65;color:#8A6440;padding-left:20px;position:relative}
+.card li::before{content:"·";position:absolute;left:6px;color:var(--pink-d);font-weight:900}
+.card li b{color:#E2683C}
+.linkbtn{
+  margin-top:14px;width:100%;height:48px;border:0;border-radius:24px;cursor:pointer;
+  background:linear-gradient(180deg,#FFF3D6,#FFE0A8);color:#8A4A12;
+  box-shadow:0 4px 0 #E5BE7C;font-family:var(--cute);font-size:14.5px;font-weight:700;letter-spacing:1px;
+}
+.linkbtn:active{transform:translateY(3px);box-shadow:0 1px 0 #E5BE7C}
+.foot{text-align:center;font-size:11px;font-weight:600;color:#B99169;line-height:1.9;padding:0 6px}
+.foot a{color:#C2894F}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="board">
+    <div class="bulbs" id="bulbs1"></div>
+    <div class="title">今天干嘛</div>
+    <div class="sub">WHAT TO DO TODAY</div>
+    <div class="slogan">拉一下拉杆<br>今天吃什么、去哪儿玩，交给运气</div>
+    <div class="bulbs" id="bulbs2"></div>
+  </div>
+
+  <div class="doors">
+    <a class="door play" href="play.html">
+      <span class="em">🎰</span>
+      <span class="tx">
+        <span class="t1">手机上玩</span>
+        <span class="t2">四个滚轮 + 一整天的行程卡</span>
+      </span>
+      <span class="arr">›</span>
+    </a>
+    <a class="door desk" href="desktop.html">
+      <span class="em">💻</span>
+      <span class="tx">
+        <span class="t1">电脑版</span>
+        <span class="t2">大屏 · 还能自己往池子里加地方</span>
+      </span>
+      <span class="arr">›</span>
+    </a>
+  </div>
+  <div class="hint">手机上打开，直接点上面那个粉色按钮就行</div>
+
+  <div class="card">
+    <h2>这里面有什么</h2>
+    <ul>
+      <li><b>206 条成都本地地点</b>：书店、展览、古镇、爬山、火锅、串串、日料……公开信息整理</li>
+      <li><b>摇出玩 + 吃</b>：上午玩 / 中午吃 / 下午玩 / 晚上吃，摇完摊开一整天的行程</li>
+      <li><b>排得下</b>：时间会自动串起来，午饭、晚饭不会排到奇怪的点上</li>
+      <li><b>纯本地运行</b>：单个 HTML 文件，不联网、不注册、不上传任何数据</li>
+    </ul>
+    <button class="linkbtn" id="btnCopy">复制这个页面的链接</button>
+  </div>
+
+  <div class="foot">
+    摇出来的只是灵感，不是保证。<br>
+    营业时间、预约情况出门前建议电话确认一下。<br>
+    <a href="https://github.com/AC539" id="repoLink">GitHub · AC539</a>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  /* 招牌上下两排小灯泡 */
+  [['bulbs1', 13], ['bulbs2', 13]].forEach(function (cfg) {
+    var box = document.getElementById(cfg[0]), html = '';
+    for (var i = 0; i < cfg[1]; i++) html += '<span></span>';
+    box.innerHTML = html;
+  });
+
+  /* 复制当前链接（https 下 navigator.clipboard 可用；file:// 下退化成选中） */
+  var btn = document.getElementById('btnCopy');
+  btn.addEventListener('click', function () {
+    var url = location.href;
+    var done = function (okText) {
+      btn.textContent = okText;
+      setTimeout(function () { btn.textContent = '复制这个页面的链接'; }, 1800);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(url).then(function () { done('已复制 ✓ 发给要一起出门的人'); },
+                                              function () { fallback(url); });
+    } else {
+      fallback(url);
+    }
+    function fallback(u) {
+      var ta = document.createElement('textarea');
+      ta.value = u; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+      document.body.removeChild(ta);
+      done(ok ? '已复制 ✓ 发给要一起出门的人' : '长按地址栏复制吧');
+    }
+  });
+})();
+</script>
+</body>
+</html>

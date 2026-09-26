@@ -1,0 +1,1566 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#FBF8F3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="今天干嘛">
+<title>今天干嘛</title>
+<style>
+:root{
+  --bg:#FBF8F3; --surface:#FFFFFF; --surface2:#F4F0E8;
+  --ink:#22201C; --ink2:#6B6862; --ink3:#A5A096;
+  --line:rgba(34,32,28,.09); --line2:rgba(34,32,28,.16);
+  --purple:#6C5CE7; --purple-s:#EEEBFF;
+  --coral:#FF6B4A; --coral-s:#FFEDE8;
+  --mint:#17B890; --mint-s:#E3F7F1;
+  --amber:#F5A623; --amber-s:#FFF3E0;
+  --blue:#3B8DF0; --blue-s:#E7F1FE;
+  --r-l:24px; --r-m:16px; --r-s:10px;
+  --sh:0 2px 8px rgba(34,32,28,.05), 0 12px 32px rgba(34,32,28,.06);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:system-ui,-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  font-size:15px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+button{font-family:inherit;font-size:inherit;color:inherit;border:0;background:none;cursor:pointer}
+input,textarea,select{font-family:inherit;font-size:inherit;color:inherit}
+.hide{display:none !important}
+
+#app{max-width:480px;margin:0 auto;padding:0 16px 100px;position:relative}
+
+/* ---------- 顶栏 ---------- */
+.top{display:flex;align-items:flex-end;justify-content:space-between;padding:22px 4px 14px}
+.top h1{margin:0;font-size:23px;font-weight:700;letter-spacing:-.3px}
+.top h1 small{display:block;font-size:11px;font-weight:500;color:var(--ink3);letter-spacing:.4px;margin-top:3px}
+.top .date{font-size:12px;color:var(--ink2);text-align:right;line-height:1.5}
+.top .date b{display:block;font-size:13px;color:var(--ink);font-weight:600}
+
+/* ---------- 通用卡 ---------- */
+.card{background:var(--surface);border-radius:var(--r-l);box-shadow:var(--sh);padding:16px;margin-bottom:14px}
+.card-t{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-t h2{margin:0;font-size:15px;font-weight:600}
+.card-t .lnk{font-size:12px;color:var(--purple);font-weight:500}
+
+/* ---------- 折叠条件 ---------- */
+.cond-head{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.cond-head h2{margin:0;font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+.cond-dot{width:6px;height:6px;border-radius:50%;background:var(--mint)}
+.cond-sum{font-size:11.5px;color:var(--ink3);flex:1;text-align:right;margin-right:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cond-head .chev{width:18px;height:18px;flex:0 0 18px;transition:transform .25s;color:var(--ink3)}
+.cond.open .chev{transform:rotate(180deg)}
+.cond-body{display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line)}
+.cond.open .cond-body{display:block}
+.row{margin-bottom:12px}
+.row:last-child{margin-bottom:0}
+.row>label{display:block;font-size:11.5px;color:var(--ink3);font-weight:500;margin-bottom:7px}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{
+  padding:7px 13px;border-radius:999px;background:var(--surface2);color:var(--ink2);
+  font-size:12.5px;font-weight:500;border:1px solid transparent;transition:.16s;line-height:1.3;
+}
+.chip:active{transform:scale(.95)}
+.chip.on{background:var(--purple);color:#fff;border-color:var(--purple)}
+
+/* ---------- 老虎机 ---------- */
+.machine{
+  position:relative;background:var(--surface);border-radius:var(--r-l);
+  box-shadow:var(--sh);padding:16px 16px 18px;margin-bottom:14px;
+  transition:transform .12s;
+}
+.machine.rolling{animation:rumble .13s linear infinite}
+@keyframes rumble{
+  0%{transform:translate(0,0) rotate(0)}
+  25%{transform:translate(-1.4px,.6px) rotate(-.16deg)}
+  50%{transform:translate(1.2px,-.8px) rotate(.16deg)}
+  75%{transform:translate(-.8px,-.5px) rotate(.1deg)}
+  100%{transform:translate(.9px,.7px) rotate(-.1deg)}
+}
+.machine-t{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.machine-t .lb{font-size:12px;font-weight:600;color:var(--ink2);letter-spacing:.3px}
+.machine-t .hint{font-size:11px;color:var(--ink3)}
+
+.reels{
+  display:flex;gap:9px;background:var(--surface2);
+  border-radius:var(--r-m);padding:9px;position:relative;
+  margin-right:20px;
+}
+.reel{
+  flex:1;height:104px;overflow:hidden;position:relative;
+  background:var(--surface);border-radius:var(--r-s);
+  box-shadow:inset 0 0 0 1px var(--line), inset 0 2px 6px rgba(34,32,28,.05);
+}
+.reel .strip{position:absolute;left:0;right:0;top:0;will-change:transform}
+.cell{
+  height:104px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;padding:6px 5px;text-align:center;
+}
+.cell .ic{width:26px;height:26px;flex:0 0 26px;color:var(--ink3)}
+.cell .ic svg{width:26px;height:26px;display:block}
+.cell .tag{font-size:10.5px;color:var(--ink3);font-weight:500;letter-spacing:.2px}
+.cell .nm{font-size:12.5px;font-weight:600;line-height:1.25;word-break:break-all;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.reel::after{
+  content:"";position:absolute;inset:0;pointer-events:none;border-radius:var(--r-s);
+  box-shadow:inset 0 10px 12px -10px rgba(34,32,28,.28), inset 0 -10px 12px -10px rgba(34,32,28,.28);
+}
+.reel.win{animation:pop .42s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.07)}100%{transform:scale(1)}}
+
+.lever{position:absolute;right:8px;top:72px;width:24px;height:72px;z-index:3;
+  cursor:grab;touch-action:none;border-radius:12px;background:var(--surface2);
+  box-shadow:inset 0 0 0 1px var(--line);
+  display:flex;flex-direction:column;align-items:center;padding-top:5px}
+.lever .knob{width:18px;height:18px;flex:0 0 18px;border-radius:50%;background:var(--coral);
+  box-shadow:0 2px 6px rgba(255,107,74,.45);transition:transform .18s cubic-bezier(.34,1.56,.64,1);
+  position:relative;z-index:2}
+.lever .stick{width:6px;height:36px;border-radius:3px;background:#CDC6B6;transition:height .16s}
+.lever.pulled .knob{transform:translateY(16px)}
+.lever.pulled .stick{height:20px}
+
+.spin-btn{
+  width:100%;height:54px;margin-top:14px;border-radius:var(--r-m);
+  background:var(--purple);color:#fff;font-size:16px;font-weight:700;letter-spacing:1px;
+  box-shadow:0 6px 18px rgba(108,92,231,.32);transition:.14s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.spin-btn:active{transform:translateY(2px) scale(.985);box-shadow:0 2px 8px rgba(108,92,231,.28)}
+.spin-btn:disabled{opacity:.5;box-shadow:none}
+
+/* ---------- 时间轴 ---------- */
+.plan-empty{text-align:center;color:var(--ink3);font-size:13px;padding:22px 10px;line-height:1.7}
+.tl{position:relative;padding-left:4px}
+.tl-row{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line)}
+.tl-row:last-child{border-bottom:0}
+.tl-time{width:42px;flex:0 0 42px;font-size:12px;font-weight:600;color:var(--ink2);
+  font-variant-numeric:tabular-nums;padding-top:2px}
+.tl-rail{width:9px;flex:0 0 9px;display:flex;flex-direction:column;align-items:center;padding-top:5px}
+.tl-rail i{width:9px;height:9px;border-radius:50%;display:block}
+.tl-rail s{flex:1;width:1.5px;background:var(--line);display:block;margin-top:3px}
+.tl-row:last-child .tl-rail s{display:none}
+.tl-body{flex:1;min-width:0}
+.tl-body .k{font-size:10.5px;color:var(--ink3);font-weight:600;letter-spacing:.4px}
+.tl-body .v{font-size:14.5px;font-weight:600;line-height:1.35;margin-top:1px;word-break:break-all}
+.tl-body .p{font-size:12px;color:var(--ink2);margin-top:3px;line-height:1.5}
+.tl-acts{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap}
+.mini{font-size:11.5px;font-weight:500;color:var(--purple);padding:4px 9px;
+  background:var(--purple-s);border-radius:999px}
+.mini.gray{color:var(--ink2);background:var(--surface2)}
+
+.plan-acts{display:flex;gap:9px;margin-top:14px}
+.plan-acts button{flex:1;height:42px;border-radius:var(--r-s);font-size:13.5px;font-weight:600;
+  background:var(--surface2);color:var(--ink);transition:.14s}
+.plan-acts button:active{transform:scale(.97)}
+.plan-acts button.pri{background:var(--ink);color:#fff}
+
+/* ---------- 标签 ---------- */
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tg{font-size:10.5px;padding:2.5px 7px;border-radius:5px;background:var(--surface2);color:var(--ink2);font-weight:500}
+.tg.p{background:var(--purple-s);color:#5A4BD1}
+.tg.c{background:var(--coral-s);color:#E0522F}
+.tg.m{background:var(--mint-s);color:#0E8E6E}
+.tg.a{background:var(--amber-s);color:#B87914}
+.tg.b{background:var(--blue-s);color:#2C74CE}
+
+/* ---------- 灵感/池子列表 ---------- */
+.item{display:flex;gap:11px;padding:12px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+.item:last-child{border-bottom:0}
+.item .bul{width:34px;height:34px;flex:0 0 34px;border-radius:10px;display:flex;
+  align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.item .bul.p{background:var(--blue-s);color:#2C74CE}
+.item .bul.e{background:var(--coral-s);color:#E0522F}
+.item .bd{flex:1;min-width:0}
+.item .bd .h{font-size:14px;font-weight:600;line-height:1.35}
+.item .bd .s{font-size:11.5px;color:var(--ink3);margin-top:2px}
+.item .bd .t{font-size:12.5px;color:var(--ink2);margin-top:4px;line-height:1.5}
+.item .op{display:flex;flex-direction:column;gap:6px;flex:0 0 auto}
+.icon-btn{width:30px;height:30px;border-radius:9px;background:var(--surface2);
+  display:flex;align-items:center;justify-content:center;transition:.14s}
+.icon-btn:active{transform:scale(.9)}
+.icon-btn svg{width:15px;height:15px}
+.icon-btn.add{background:var(--mint-s)}
+.icon-btn.del{background:var(--coral-s)}
+
+/* ---------- 输入 ---------- */
+textarea{width:100%;min-height:92px;padding:12px;border-radius:var(--r-s);
+  border:1px solid var(--line2);background:var(--surface2);resize:vertical;line-height:1.6;outline:none}
+textarea:focus{border-color:var(--purple);background:#fff}
+input[type=text],input[type=password],select{width:100%;height:42px;padding:0 12px;border-radius:var(--r-s);
+  border:1px solid var(--line2);background:var(--surface2);outline:none}
+input:focus,select:focus{border-color:var(--purple);background:#fff}
+textarea::placeholder,input::placeholder{color:var(--ink3)}
+.btn-row{display:flex;gap:9px;margin-top:10px}
+.btn-row button{flex:1;height:44px;border-radius:var(--r-s);font-size:14px;font-weight:600;transition:.14s}
+.btn-row button:active{transform:scale(.97)}
+.btn-pri{background:var(--purple);color:#fff;box-shadow:0 4px 12px rgba(108,92,231,.26)}
+.btn-sec{background:var(--surface2);color:var(--ink)}
+.btn-g{flex:1;height:42px;border-radius:var(--r-s);background:var(--surface2);font-size:13px;font-weight:600}
+
+/* ---------- 底栏导航 ---------- */
+.nav{
+  position:fixed;left:50%;transform:translateX(-50%);bottom:0;
+  width:100%;max-width:480px;padding:9px 16px calc(9px + env(safe-area-inset-bottom));
+  background:rgba(251,248,243,.92);backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);display:flex;gap:4px;z-index:50;
+}
+.nav button{flex:1;height:52px;border-radius:var(--r-s);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;color:var(--ink3);transition:.16s}
+.nav button.on{color:var(--purple);background:var(--purple-s)}
+.nav button svg{width:20px;height:20px}
+.nav button span{font-size:10.5px;font-weight:600;letter-spacing:.3px}
+
+/* ---------- toast ---------- */
+#toast{position:fixed;left:50%;bottom:96px;transform:translate(-50%,14px);
+  background:rgba(34,32,28,.9);color:#fff;font-size:13px;font-weight:500;
+  padding:10px 18px;border-radius:999px;opacity:0;pointer-events:none;
+  transition:.28s;z-index:99;max-width:86%;text-align:center}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ---------- 空态 ---------- */
+.empty{text-align:center;padding:34px 16px;color:var(--ink3);font-size:13px;line-height:1.8}
+.empty b{display:block;font-size:14px;color:var(--ink2);margin-bottom:5px;font-weight:600}
+
+.note{font-size:11.5px;color:var(--ink3);line-height:1.6;margin-top:10px;
+  padding:9px 11px;background:var(--surface2);border-radius:var(--r-s)}
+.seg{display:flex;background:var(--surface2);border-radius:var(--r-s);padding:3px;gap:3px;margin-bottom:12px}
+.seg button{flex:1;height:34px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--ink2);transition:.16s}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(34,32,28,.08)}
+
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="top">
+    <h1>今天干嘛<small>TIAN GANMA</small></h1>
+    <div class="date"><b id="dToday">—</b><span id="dWeek">—</span></div>
+  </div>
+
+  <main>
+    <section id="pgRoll">
+
+      <div class="card cond" id="condCard">
+        <div class="cond-head" id="condHead">
+          <h2><span class="cond-dot"></span>今天什么情况</h2>
+          <span class="cond-sum" id="condSum"></span>
+          <svg class="chev" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="cond-body">
+          <div class="row"><label>活动范围</label><div class="chips" data-k="scope">
+            <button class="chip" data-v="city">主城区</button>
+            <button class="chip" data-v="near">含近郊</button>
+            <button class="chip" data-v="any">不限</button>
+          </div></div>
+          <div class="row"><label>怎么去</label><div class="chips" data-k="traffic">
+            <button class="chip" data-v="car">开车</button>
+            <button class="chip" data-v="metro">地铁</button>
+            <button class="chip" data-v="walk">走路</button>
+          </div></div>
+          <div class="row"><label>人均预算</label><div class="chips" data-k="budget">
+            <button class="chip" data-v="0">不限</button>
+            <button class="chip" data-v="1">50 内</button>
+            <button class="chip" data-v="2">100 内</button>
+            <button class="chip" data-v="3">200 内</button>
+          </div></div>
+          <div class="row"><label>今天的状态</label><div class="chips" data-k="energy">
+            <button class="chip" data-v="chill">躺平</button>
+            <button class="chip" data-v="any">随便</button>
+            <button class="chip" data-v="active">想动</button>
+          </div></div>
+          <div class="row"><label>玩多久</label><div class="chips" data-k="len">
+            <button class="chip" data-v="full">一整天</button>
+            <button class="chip" data-v="half">半天</button>
+          </div></div>
+          <div class="row"><label>摇过的</label><div class="chips" data-k="repeat">
+            <button class="chip" data-v="norepeat">不再出现</button>
+            <button class="chip" data-v="allow">允许重复</button>
+          </div></div>
+          <div class="row">
+            <label>附近实时数据（可选）</label>
+            <input type="password" id="amapKey" placeholder="高德 Web 服务 Key，不填就用本地池">
+            <div class="btn-row">
+              <button class="btn-g" id="btnLive">拉取附近</button>
+              <button class="btn-g" id="btnLiveClear">清空实时数据</button>
+            </div>
+            <div class="note" id="liveNote">不填也能用。</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="machine" id="machine">
+        <div class="machine-t">
+          <span class="lb">摇出你们的一天</span>
+          <span class="hint">点某一格可单独换</span>
+        </div>
+        <div class="reels" id="reels">
+          <div class="reel" data-type="p" data-label="上午 · 玩"><div class="strip"></div></div>
+          <div class="reel" data-type="e" data-label="中午 · 吃"><div class="strip"></div></div>
+          <div class="reel" data-type="p" data-label="下午 · 玩"><div class="strip"></div></div>
+        </div>
+        <div class="lever" id="lever"><div class="knob"></div><div class="stick"></div></div>
+        <button class="spin-btn" id="btnSpin">拉 一 下</button>
+      </div>
+
+      <div class="card">
+        <div class="card-t">
+          <h2>今天这样过</h2>
+          <span class="lnk" id="planCount"></span>
+        </div>
+        <div id="planBox"><div class="plan-empty">还没摇。<br>拉一下那根杆，今天就不用想了。</div></div>
+        <div class="plan-acts" id="planActs" style="display:none">
+          <button id="btnRerollAll">全部重摇</button>
+          <button id="btnCopyPlan">复制计划</button>
+          <button class="pri" id="btnSaveCombo">存进池子</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="pgIdea" class="hide">
+      <div class="card">
+        <div class="card-t"><h2>粘贴一个点子进来</h2></div>
+        <textarea id="pasteBox" placeholder="刷到好玩的、朋友推荐的，直接粘在这里。一行一个，用句号分开也行。"></textarea>
+        <div class="btn-row">
+          <button class="btn-sec" id="btnPasteClear">清空</button>
+          <button class="btn-pri" id="btnParse">解析成条目</button>
+        </div>
+      </div>
+
+      <div class="card" id="candCard" style="display:none">
+        <div class="card-t"><h2>待确认</h2><span class="lnk" id="candCount"></span></div>
+        <div id="candBox"></div>
+        <div class="btn-row"><button class="btn-pri" id="btnCandAll">全部加进池子</button></div>
+      </div>
+
+      <div class="card">
+        <div class="card-t"><h2>换一批灵感</h2><span class="lnk" id="btnMoreIdeas">换一批</span></div>
+        <div id="ideaBox"></div>
+        <div class="note">标「报道」的是从公开报道整理的，标「AI」的是生成的。去之前都建议先搜一下确认还在不在。</div>
+      </div>
+    </section>
+
+    <section id="pgPool" class="hide">
+      <div class="card">
+        <input type="text" id="poolSearch" placeholder="搜名字 / 区域 / 标签" style="margin-bottom:12px">
+        <div class="seg" id="poolSeg">
+          <button class="on" data-v="all">全部</button>
+          <button data-v="p">玩的</button>
+          <button data-v="e">吃的</button>
+          <button data-v="u">我加的</button>
+          <button data-v="x">拉黑</button>
+        </div>
+        <div id="poolBox"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-t"><h2>手动加一条</h2></div>
+        <input type="text" id="addName" placeholder="名字，比如「家楼下新开的串串」">
+        <div class="chips" id="addType" style="margin-top:10px">
+          <button class="chip on" data-v="p">玩的</button>
+          <button class="chip" data-v="e">吃的</button>
+        </div>
+        <div class="btn-row"><button class="btn-pri" id="btnAdd">加进池子</button></div>
+      </div>
+
+      <div class="card">
+        <div class="card-t"><h2>收藏的组合</h2><span class="lnk" id="comboClear">清空</span></div>
+        <div id="comboBox"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-t"><h2>维护</h2></div>
+        <div class="btn-row">
+          <button class="btn-sec" id="btnResetRecent">清空「摇过的」</button>
+          <button class="btn-sec" id="btnResetAll">恢复出厂</button>
+        </div>
+        <div class="note" id="statNote"></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="nav" id="nav">
+    <button data-p="roll" class="on">
+      <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="3" stroke="currentColor" stroke-width="1.7"/><circle cx="8.5" cy="12" r="1.6" fill="currentColor"/><circle cx="15.5" cy="12" r="1.6" fill="currentColor"/></svg>
+      <span>摇一摇</span>
+    </button>
+    <button data-p="idea">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 3a6 6 0 0 0-3.3 11v2h6.6v-2A6 6 0 0 0 12 3Z" stroke="currentColor" stroke-width="1.7"/><path d="M10 19h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      <span>灵感</span>
+    </button>
+    <button data-p="pool">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M4 7.5h16M4 12h16M4 16.5h10" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
+      <span>池子</span>
+    </button>
+  </nav>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* 今天干嘛 · 内容池 v1 · 2026-09-25
+   格式 [名称, 类型, 子类, 区域, 价位1-3, 时长h, 标签, 贴士]
+   类型: p=玩 e=吃
+   来源说明: 本池由公开信息整理而成, 营业状态可能变化, 出门前建议电话确认。
+   新增条目请直接往对应数组里加, 然后重跑 build.py。 */
+
+window.POOL_RAW = [
+
+/* ============ 玩 · 书店阅读 ============ */
+["方所书店",           "p","书店","锦江",2,2,  "室内,安静,出片",        "太古里负一层, 傍晚人少, 看完书直接上楼吃饭"],
+["几何书店",           "p","书店","成华",2,2,  "室内,安静,出片",        "猛追湾那家是洞穴式设计, 适合拍照"],
+["钟书阁",             "p","书店","高新",2,1.5,"室内,出片",              "镜面天花板, 周末进门要排队"],
+["西西弗书店",         "p","书店","锦江",2,1,  "室内,安静",              "商场里最好找, 随便翻翻就走"],
+["一苇书坊",           "p","书店","青羊",1,2,  "室内,安静,小众",        "宽窄巷子附近的独立书店, 有猫"],
+["读本屋",             "p","书店","锦江",1,1.5,"室内,安静,小众",        "镋钯街里面, 书选得不错"],
+
+/* ============ 玩 · 展览博物馆 ============ */
+["天府艺术公园美术馆", "p","展览","金牛",1,2.5,"室内,免费,出片,雨天友好","免预约直接进, A区穹顶展厅光影好, 逛完湖边喝咖啡"],
+["成都博物馆",         "p","博物馆","青羊",1,2.5,"室内,免费,雨天友好",  "天府广场旁, 周一闭馆, 记得提前约票"],
+["成都自然博物馆",     "p","博物馆","成华",2,2.5,"室内,亲子,雨天友好",  "理工大旁边, 恐龙化石是主角, 周末人多"],
+["四川博物院",         "p","博物馆","青羊",1,2,  "室内,免费,安静",      "浣花溪边, 人比成都博物馆少, 看得舒服"],
+["成都当代影像馆",     "p","展览","金牛",2,1.5,"室内,安静,出片",        "华侨城那边, 摄影展为主, 人不多"],
+["A4美术馆",           "p","展览","天府",2,1.5,"室内,安静,出片",        "麓湖生态城里, 看完可以沿湖走走"],
+["蓝顶艺术中心",       "p","展览","锦江",2,1.5,"室内,安静,小众",        "三圣乡, 当代艺术聚集地, 看运气赶上开放"],
+["成都画院",           "p","展览","青羊",1,1,  "室内,免费,安静",        "宽窄巷子旁边, 很小很安静, 顺路逛"],
+["成都科幻馆",         "p","展览","郫都",2,2.5,"室内,出片,需要预约",    "周末晚八点有无人机表演, 票要提前三天在公众号约"],
+["川菜博物馆",         "p","博物馆","郫都",2,2,  "室内,体验,雨天友好",  "里面有全天自助小吃街, 真能吃一整天"],
+["成都美术馆",         "p","展览","青羊",1,2,  "室内,免费,安静",        "天府艺术公园旁边, 常设展免费看"],
+["建川博物馆聚落",     "p","博物馆","大邑",2,4,  "室内外,历史,体力活",  "安仁古镇那一片, 馆太多一天看不完"],
+["成都武侯祠",         "p","博物馆","武侯",2,2,  "室内外,历史,游客多",  "红墙竹影那段最出片, 和锦里连着逛"],
+["杜甫草堂",           "p","博物馆","青羊",2,2,  "室内外,历史,安静",    "往里走比门口安静得多, 旁边就是浣花溪"],
+
+/* ============ 玩 · 公园户外 ============ */
+["桂溪生态公园",       "p","公园","高新",1,2,  "户外,免费,轻运动,出片","天府大道边上, 草坪大, 适合野餐和滑板"],
+["青龙湖湿地公园",     "p","公园","成华",1,2.5,"户外,免费,轻运动,骑行","环湖骑一圈正好, 门口有租车的"],
+["兴隆湖",             "p","户外","天府",1,2.5,"户外,免费,轻运动,出片","湖很大, 日落好看, 周末人不少"],
+["白鹭湾湿地公园",     "p","公园","锦江",1,2,  "户外,免费,安静,骑行",  "三圣乡旁边, 人少, 适合什么都不干"],
+["人民公园",           "p","公园","青羊",1,1.5,"户外,免费,躺平,体验",  "鹤鸣茶社喝盖碗茶加采耳, 最成都的一下午"],
+["望江楼公园",         "p","公园","武侯",1,1.5,"户外,免费,安静",        "竹子多, 人不多, 适合慢慢走"],
+["浣花溪公园",         "p","公园","青羊",1,1.5,"户外,免费,安静",        "跟杜甫草堂挨着, 两个一起逛正好"],
+["东湖公园",           "p","公园","锦江",1,1.5,"户外,免费,出片",        "城里最近的湖, 傍晚跑步的人很多"],
+["塔子山公园",         "p","公园","成华",1,1.5,"户外,免费,亲子",        "有野餐区, 周末带垫子来的人多"],
+["交子公园",           "p","公园","高新",1,1.5,"户外,免费,夜晚",        "晚上有灯光秀, 双塔下面"],
+["天府绿道",           "p","户外","不限",1,3,  "户外,免费,轻运动,骑行",  "随便找一段入口, 骑到累为止"],
+["龙泉山看日落",       "p","户外","龙泉",1,3,  "户外,免费,出片",        "开车上山, 日落后天黑路滑慢点开"],
+["麓客岛",             "p","户外","天府",2,3,  "户外,出片,遛娃",        "麓湖里的小岛, 有草坪有集市"],
+["三圣乡花市",         "p","户外","锦江",1,2,  "户外,免费,出片",        "买两把花回家, 比市区便宜很多"],
+["青龙湖观鸟",         "p","户外","成华",1,2,  "户外,免费,安静",        "冬天候鸟多, 带个望远镜"],
+["锦城湖公园",         "p","公园","高新",1,2,  "户外,免费,轻运动",      "环湖跑道好, 适合跑步和骑车"],
+["非遗博览园",         "p","公园","青羊",1,2,  "户外,免费,小众",        "人少地大, 春天花开的时候最好"],
+["音乐百花谷",         "p","户外","新都",2,3,  "户外,出片",            "花海为主, 季节性强, 去之前看看花期"],
+
+/* ============ 玩 · 街区园区 ============ */
+["东郊记忆",           "p","园区","成华",1,3,  "户外,出片,免费,热闹",  "老厂区改造, 红砖厂房和成都墙, 常有漫展市集"],
+["U37创意仓库",        "p","园区","锦江",1,1.5,"户外,出片,小众",        "水碾河那边, 小店和文创, 人比东郊少"],
+["铁像寺水街",         "p","街区","高新",2,2,  "户外,出片,茶馆",        "古风建筑配商业, 喝茶吃饭都在一条街上"],
+["镋钯街",             "p","街区","锦江",2,1.5,"户外,出片,咖啡",        "成都小泰国, 独立咖啡馆和买手店密集"],
+["青莲上街",           "p","街区","锦江",2,1.5,"户外,出片,小众",        "社区小店一条街, 适合边逛边喝"],
+["抚琴小区老巷",       "p","街区","金牛",1,1.5,"户外,烟火气,免费,小吃","五块钱喝一下午盖碗茶, 傍晚夜市糖油果子现炸"],
+["建设路小吃街",       "p","街区","成华",1,1.5,"户外,小吃,热闹",        "电子科大旁边, 晚上才出摊, 排队是常态"],
+["太古里",             "p","街区","锦江",2,2,  "户外,出片,逛街",        "白天拍照晚上灯光好, 什么时候人都多"],
+["宽窄巷子",           "p","街区","青羊",1,1.5,"户外,游客多,出片",      "游客多但确实好看, 往旁边柿子巷走人少"],
+["锦里",               "p","街区","武侯",1,1.5,"户外,游客多,出片,夜晚","晚上红灯笼亮起来好看, 和武侯祠连着逛"],
+["香香巷望平街",       "p","街区","成华",1,1.5,"户外,免费,出片,夜生活","猛追湾河边, 咖啡馆和酒吧挤在一条街上"],
+["东门市井",           "p","街区","成华",1,1.5,"户外,免费,出片,体验",  "老成都街景复刻, 有川剧变脸和盖碗茶"],
+["文殊院街区",         "p","街区","青羊",1,1.5,"户外,免费,安静",        "庙里安静, 旁边小吃街热闹, 一动一静"],
+["青羊宫",             "p","街区","青羊",1,1,  "户外,免费,安静,历史",  "门票十块, 里面很清静"],
+["大慈寺",             "p","街区","锦江",1,1,  "户外,免费,安静",        "就在太古里里面, 闹中取静"],
+["川大望江校区",       "p","街区","武侯",1,1.5,"户外,免费,安静",        "老校区树多, 走一圈很舒服"],
+
+/* ============ 玩 · 夜生活演出 ============ */
+["玉林路小酒馆",       "p","夜生活","武侯",2,3,  "夜生活,热闹,需要预约","就是歌里那个, 听现场要早点去占位"],
+["九眼桥酒吧街",       "p","夜生活","锦江",2,3,  "夜生活,热闹",        "河边一整条, 挑一家有驻场的坐坐"],
+["339电视塔片区",      "p","夜生活","成华",2,3,  "夜生活,热闹,出片",    "塔下面一圈酒吧和Livehouse, 晚上才热闹"],
+["正火艺术中心",       "p","演出","成华",2,3,  "夜生活,演出,需要预约","东郊记忆里面, 看乐队演出, 提前买票"],
+["小酒馆空间",         "p","演出","武侯",2,2.5,"夜生活,演出,需要预约","玉林那边的新场地, 独立乐队多"],
+["过载喜剧",           "p","演出","锦江",1,2,  "室内,演出,需要预约",  "成都本土脱口秀, 小剧场, 票不贵但抢手"],
+["成都城市音乐厅",     "p","演出","武侯",2,2.5,"室内,演出,需要预约",  "音乐会为主, 穿得正式点不违和"],
+["四川大剧院",         "p","演出","青羊",2,2.5,"室内,演出,需要预约",  "话剧舞剧为主, 天府广场附近"],
+["繁星戏剧村",         "p","演出","锦江",2,2,  "室内,演出",            "小剧场话剧和沉浸式戏剧, 票价便宜"],
+["东郊记忆演艺中心",   "p","演出","成华",2,2.5,"室内,演出,需要预约",  "音乐剧和live都有, 看排期"],
+["成都城市音乐坊",     "p","夜生活","武侯",2,2,  "夜生活,音乐,出片",    "晚上有街头演出, 随便走走听听"],
+["天府双塔灯光秀",     "p","夜生活","高新",1,1,  "夜生活,免费,出片",    "金融城那边, 晚上整点有, 看完顺路吃宵夜"],
+
+/* ============ 玩 · 体验动手 ============ */
+["陶艺体验",           "p","体验","锦江",2,2.5,"室内,体验,出片,需要预约","太古里周边有店, 捏完要等烧制, 下次来取"],
+["漆器制作",           "p","体验","成华",2,2,  "室内,体验,小众",      "老漆器厂改造的大旗茶馆楼上, 楼下还能看变脸"],
+["DIY烘焙",            "p","体验","高新",2,2.5,"室内,体验,甜",        "商场里都有, 适合下雨天, 做完直接当下午茶"],
+["手冲咖啡课",         "p","体验","锦江",2,2,  "室内,体验,安静",      "不少独立咖啡馆有体验课, 提前问"],
+["攀岩馆",             "p","运动","武侯",2,2,  "室内,体力活,体验",    "第一次去玩抱石区就够, 穿运动裤"],
+["射箭馆",             "p","运动","锦江",2,1.5,"室内,体验",            "一小时一百出头, 手臂会酸"],
+["保龄球",             "p","运动","高新",2,1.5,"室内,轻运动",          "商场里都有, 人多的时候要排道"],
+["台球",               "p","运动","成华",1,1.5,"室内,轻运动",          "老球房便宜, 新球房环境好"],
+["电玩城",             "p","游戏","锦江",1,1,  "室内,轻运动",          "抓娃娃和赛车, 逛累了进去玩两把"],
+["剧本杀",             "p","游戏","锦江",2,4,  "室内,长时间,需要预约", "一场四小时起, 最好先凑够人"],
+["密室逃脱",           "p","游戏","青羊",2,1.5,"室内,需要预约",        "两人场少, 一般要拼场"],
+["桌游吧",             "p","游戏","武侯",1,2,  "室内,安静,可以耗一天","工作日人少, 老板一般会教你玩"],
+["蜀宴赋沉浸式餐秀",   "p","体验","成华",3,2.5,"室内,体验,出片,需要预约,夜生活","东郊记忆里, 边吃边看汉文化演出, 人均不便宜"],
+["大话蜀汉宴游洛带",   "p","体验","龙泉",3,2.5,"室内,体验,出片,需要预约,夜生活","洛带古镇里, 能餐能茶能戏"],
+["川剧变脸",           "p","体验","青羊",2,1.5,"室内,体验,游客向",    "悦来茶园或大旗茶馆都有, 提前订位"],
+["采耳",               "p","体验","青羊",1,0.5,"体验,躺平",            "人民公园里就有, 叮一声很上头"],
+["汉服体验拍照",       "p","体验","锦江",2,2,  "出片,体验,需要预约",  "宽窄巷子周边一大堆, 含妆造"],
+["拍照写真",           "p","体验","锦江",3,3,  "出片,需要预约",        "纪念日拍一组, 提前找摄影师"],
+["油画体验",           "p","体验","青羊",2,2.5,"室内,安静,体验",      "画完能带走, 不用基础"],
+["马术体验",           "p","体验","双流",3,1.5,"户外,体验,需要预约",  "近郊马场, 第一次就是牵着走一圈"],
+["卡丁车",             "p","运动","龙泉",2,1.5,"户外,体力活",          "近郊的赛道更长, 市区里的偏小"],
+["密室剧本一日连打",   "p","游戏","锦江",2,6,  "室内,长时间,需要预约","连着玩两三个本, 一天就过去了"],
+
+/* ============ 玩 · 活动型(不绑地点) ============ */
+["去菜市场买菜回家做饭",  "p","活动","不限",1,3,  "室内,躺平,省钱",      "挑两样没做过的菜, 一起做才有意思"],
+["找家没去过的咖啡馆坐一下午","p","活动","不限",2,2,"室内,躺平,发呆",    "地图上随便点一家, 摇到什么就是什么, 不许反悔"],
+["公园野餐",           "p","活动","不限",1,3,  "户外,免费,出片",        "带上垫子和吃的, 什么都不用买"],
+["去旧书市场淘书",     "p","活动","不限",1,2,  "室内,小众,省钱",        "送仙桥或者文殊院附近, 慢慢翻, 一本几块钱"],
+["走一条没走过的路",   "p","活动","不限",1,1.5,"户外,免费,发呆",        "不带目的地, 就在家附近走一小时"],
+["去看一场电影",       "p","活动","不限",1,2.5,"室内,躺平",            "挑个最近上映的, 别纠结评分"],
+["在家做饭加看老电影","p","活动","不限",1,4,  "室内,躺平,省钱",        "提前想好菜单, 别最后又点外卖"],
+["去大学门口吃小吃",   "p","活动","不限",1,1.5,"户外,小吃,省钱",        "川大 电子科大 西南交大 随便挑一个"],
+["骑车去找一家没吃过的面馆","p","活动","不限",1,2,"户外,轻运动,省钱",  "骑到哪儿吃到哪儿, 不许导航"],
+["去书店各挑一本书互相交换","p","活动","不限",1,2,"室内,安静",          "挑完当场交换, 各自看一小时"],
+["拼一副拼图",         "p","活动","不限",1,3,  "室内,躺平,安静",        "一千片的够耗一下午, 放着当装饰也行"],
+["整理一次家里",       "p","活动","不限",1,3,  "室内,体力活,省钱",      "扔掉一年没用的东西, 弄完心情会好"],
+["泡温泉",             "p","活动","温江",3,4,  "室内外,躺平,需要预约",  "近郊温泉, 傍晚去最舒服"],
+["露营",               "p","活动","龙泉",2,5,  "户外,出片,需要装备",    "龙泉山或近郊营地, 帐篷一般能租"],
+["去酒店住一晚",       "p","活动","锦江",3,24, "室内,躺平,换个环境",    "不用出城, 就在城里找个酒店躺一天"],
+["公园划船",           "p","活动","不限",1,1.5,"户外,轻运动,免费",      "人民公园和东湖公园都有, 划一小时正好"],
+["逛一次花鸟市场",     "p","活动","青羊",1,1.5,"户外,免费,小众",        "青石桥那边, 看鱼看花看鸟"],
+["去体育馆看一场球",   "p","活动","武侯",2,2.5,"室内,热闹,需要预约",    "川队的比赛, 现场气氛和电视完全不一样"],
+["打一场羽毛球",       "p","活动","不限",1,1.5,"室内,体力活,需要预约",  "场馆要提前订, 两个人也能打"],
+["游泳",               "p","活动","不限",2,1.5,"室内,体力活",           "找个恒温泳池, 冬天也能游"],
+
+/* ============ 玩 · 古镇近郊 ============ */
+["洛带古镇",           "p","古镇","龙泉",1,3,  "户外,免费,小吃",        "客家古镇, 伤心凉粉和油烫鹅值得吃"],
+["黄龙溪古镇",         "p","古镇","双流",1,4,  "户外,免费,玩水",        "夏天可以下河, 其他季节就是逛吃"],
+["安仁古镇",           "p","古镇","大邑",2,5,  "户外,民国风,出片",      "公馆建筑群加建川博物馆, 一天正好"],
+["平乐古镇",           "p","古镇","邛崃",1,5,  "户外,免费,玩水",        "竹溪湖边, 夏天凉快"],
+["五凤溪古镇",         "p","古镇","金堂",1,4,  "户外,免费,小众",        "人少, 沱江边, 适合发呆"],
+["街子古镇",           "p","古镇","崇州",1,5,  "户外,免费,避暑",        "青城山脚下, 光严禅院可以顺路"],
+["唐昌古镇",           "p","古镇","郫都",1,3,  "户外,免费,小众",        "常有崇宁王巡游那种民俗活动"],
+["白鹿镇",             "p","古镇","彭州",2,5,  "户外,出片,法式",        "法式风情小镇, 有音乐活动的时候更值"],
+["青城山",             "p","山水","都江堰",2,6,"户外,体力活,避暑",      "前山轻松后山累, 早点出发"],
+["都江堰景区",         "p","山水","都江堰",2,5,"户外,体力活,历史",      "和青城山能连成一天, 太赶就分两天"],
+["天台山",             "p","山水","邛崃",2,6,  "户外,体力活,避暑",      "夏天看萤火虫, 晚上住一晚"],
+["西岭雪山",           "p","山水","大邑",3,8,  "户外,体力活,需要预约",  "冬天滑雪夏天避暑, 一天来回有点赶"],
+["龙泉山爬山",         "p","山水","龙泉",1,4,  "户外,体力活,免费",      "丹景台那条线路好走, 适合新手"],
+["彭州葛仙山",         "p","山水","彭州",1,4,  "户外,体力活,小众",      "人少, 春天看花"],
+["松鼠部落",           "p","户外","温江",2,3,  "户外,亲子",            "带小孩合适, 两个人去会有点冷清"],
+["蔚然花海",           "p","户外","新津",2,3,  "户外,出片",            "季节性花海, 去之前确认花期"],
+["竹溪湖",             "p","山水","邛崃",1,3,  "户外,免费,安静",        "可以划船, 人不多"],
+
+/* ============ 吃 · 火锅串串 ============ */
+["社区老火锅",         "e","火锅","不限",2,2,  "排队久,热闹,辣",        "别去连锁, 找小区楼下招牌旧的"],
+["天星正源火锅",       "e","火锅","锦江",2,2,  "排队久,本地人,辣",      "海椒市店, 牛油锅底越煮越香, 人均八十吃到撑"],
+["钢管厂五区小郡肝",   "e","串串","成华",2,2,  "排队久,热闹",          "老牌串串, 下午五点就去排队"],
+["冒椒火辣",           "e","串串","青羊",2,1.5,"串串,排队久",          "按签算钱, 冰粉必点"],
+["马路边边麻辣烫",     "e","串串","锦江",2,1.5,"复古,热闹,出片",        "装修成八十年代, 适合拍照"],
+["玉林串串香",         "e","串串","武侯",2,2,  "夜宵,本地人",          "玉林路那一片, 深夜还开着"],
+["小龙坎",             "e","火锅","不限",3,2,  "连锁,稳定,辣",          "贵一点但不会踩雷, 外地朋友来就选这个"],
+["蜀大侠",             "e","火锅","不限",3,2,  "连锁,稳定,辣",          "同上, 出品稳"],
+["大龙燚",             "e","火锅","不限",3,2,  "连锁,稳定,辣",          "成都本地起来的连锁"],
+["冷啖杯",             "e","川菜","不限",1,1.5,"夏夜,便宜,宵夜",        "凉菜配啤酒, 成都夏天的宵夜标配"],
+["九宫格老火锅",       "e","火锅","锦江",2,2,  "辣,传统",              "九宫格不同格子火候不一样, 问老板怎么烫"],
+["鲜锅兔",             "e","川菜","不限",2,2,  "辣,自贡菜",            "自贡菜偏辣偏鲜, 不能吃辣要提前说"],
+
+/* ============ 吃 · 川菜家常 ============ */
+["明婷饭店",           "e","川菜","金牛",2,1.5,"苍蝇馆子,地道,排队久",  "脑花烧豆腐是招牌, 人均六十出头"],
+["雨田饭店",           "e","川菜","青羊",1,1,  "苍蝇馆子,地道,省钱",    "老成都家常菜, 上菜快"],
+["老妈蹄花",           "e","川菜","青羊",1,1,  "夜宵,清淡",            "半只蹄花一碗汤, 宵夜首选"],
+["陈麻婆豆腐",         "e","川菜","青羊",2,1,  "老字号,游客向",        "麻婆豆腐的祖宗, 贵但值得去一次"],
+["银杏川菜",           "e","川菜","锦江",3,2,  "正经川菜,请客",        "请客或者纪念日来这种"],
+["柴火鸡",             "e","川菜","龙泉",2,2.5,"户外,热闹,需要预约",    "现炒, 一桌人围着吃, 近郊的多"],
+["老妈爱厨",           "e","川菜","不限",2,1.5,"家常,地道",            "连锁的家常川菜, 出品稳"],
+["乐山钵钵鸡",         "e","小吃","不限",2,1,  "冷吃,小吃",            "藤椒味的最好"],
+["跷脚牛肉",           "e","川菜","不限",2,1.5,"汤菜,乐山",            "清淡不辣, 吃不了辣的时候救命"],
+["甜皮鸭",             "e","小吃","不限",2,0.5,"熟食,乐山",            "买半只回去当宵夜"],
+["自贡盐帮菜",         "e","川菜","不限",2,2,  "辣,重口",              "水煮牛肉和冷吃兔, 辣得过瘾"],
+["川北凉粉",           "e","小吃","不限",1,0.5,"小吃,便宜",            "一把凉粉一碗饭"],
+
+/* ============ 吃 · 面食小吃 ============ */
+["肥肠粉加节子",       "e","面食","不限",1,0.7,"早餐,地道,省钱",        "成都早餐天花板, 配个锅盔"],
+["甘食记",             "e","面食","青羊",1,0.7,"早餐,地道,省钱",        "老牌肥肠粉, 春熙路附近就有"],
+["龙抄手",             "e","小吃","锦江",1,1,  "老字号,游客向,小吃",    "一次点一笼各种小吃, 什么都尝一点"],
+["钟水饺",             "e","小吃","青羊",1,1,  "老字号,小吃",          "红油水饺, 甜辣口"],
+["甜水面",             "e","小吃","不限",1,0.5,"小吃,省钱",            "面条比手指粗, 酱是甜的"],
+["蛋烘糕",             "e","小吃","不限",1,0.3,"小吃,路边",            "现烤的, 加奶油肉松"],
+["糖油果子",           "e","小吃","金牛",1,0.3,"小吃,现炸,夜市",        "抚琴夜市排队最久那家就对"],
+["三大炮",             "e","小吃","青羊",1,0.3,"小吃,游客向",          "锦里和宽窄都有的表演型小吃"],
+["军屯锅盔",           "e","小吃","不限",1,0.3,"小吃,省钱",            "刚出炉的最好吃"],
+["双流老妈兔头",       "e","小吃","双流",1,1,  "地方特色",            "五香和麻辣各点一个"],
+["冒菜",               "e","小吃","不限",1,1,  "一个人也合适,省钱",    "一个人的火锅"],
+["清汤抄手",           "e","面食","不限",1,0.5,"早餐,清淡",            "红油或清汤都行"],
+["豆花面",             "e","面食","不限",1,0.5,"早餐,便宜",            "咸豆花配面, 加个蛋"],
+["凉糕凉虾",           "e","小吃","不限",1,0.5,"甜品,解辣,夏天",        "吃完火锅来一碗"],
+["烤苕皮",             "e","小吃","不限",1,0.3,"小吃,夜市",            "建设路和抚琴都有"],
+["锅巴土豆",           "e","小吃","不限",1,0.3,"小吃,夜市",            "糖醋麻辣那个味最好"],
+
+/* ============ 吃 · 烧烤夜宵 ============ */
+["何师烧烤",           "e","烧烤","不限",2,1.5,"夜宵,热闹,连锁",        "成都最稳的连锁烧烤, 深夜也开"],
+["万州烤鱼",           "e","烧烤","不限",2,1.5,"夜宵,热闹,辣",          "配啤酒, 两个人点一条就够"],
+["夜蹄花",             "e","夜宵","不限",1,1,  "夜宵,清淡",            "凌晨还开着, 喝完酒来一碗"],
+["碳烤生蚝",           "e","烧烤","不限",2,1,  "夜宵,海鲜",            "建设路和玉林都有摊"],
+["烤脑花",             "e","烧烤","不限",2,1,  "夜宵,重口",            "锡纸包着烤, 敢吃就很香"],
+["冰粉",               "e","甜品","不限",1,0.3,"甜品,解辣",            "吃完火锅必须来一碗"],
+["醪糟小汤圆",         "e","甜品","不限",1,0.5,"甜品,宵夜",            "冬天热的, 夏天冰的"],
+["锅盔夹凉粉",         "e","小吃","不限",1,0.5,"小吃,省钱",            "南充做法, 一个就饱"],
+
+/* ============ 吃 · 异国与全国菜 ============ */
+["泰式料理",           "e","异国","不限",2,1.5,"酸辣,换口味",          "成都泰餐多, 冬阴功必点"],
+["日料",               "e","日料","锦江",3,2,  "生食,安静",            "太古里周边密集, 最好提前订"],
+["韩式烤肉",           "e","韩餐","不限",3,2,  "热闹",                "人均一百多, 肉要自己烤"],
+["粤菜",               "e","粤菜","不限",2,2,  "清淡,换口味",          "吃腻了辣就来这个"],
+["新疆菜",             "e","异国","不限",2,1.5,"大份,换口味",          "大盘鸡和烤包子"],
+["云南菜",             "e","异国","不限",2,1.5,"酸辣,菌子",            "雨季来吃菌子火锅"],
+["江浙菜",             "e","粤菜","不限",2,1.5,"清淡,甜",              "换换口味"],
+["东北菜",             "e","异国","不限",2,1.5,"大份,豪爽",            "锅包肉和铁锅炖"],
+["西北面馆",           "e","面食","不限",1,1,  "面食,便宜",            "油泼面和臊子面"],
+["螺蛳粉",             "e","小吃","不限",1,0.7,"重口,便宜",            "两个人吃就都不臭了"],
+["潮汕牛肉火锅",       "e","火锅","不限",3,2,  "清淡,不辣",            "吃不了辣又想火锅就选这个"],
+["椰子鸡",             "e","火锅","不限",3,2,  "清淡,不辣",            "汤好喝, 先喝汤再吃肉"],
+
+/* ============ 吃 · 咖啡甜品下午茶 ============ */
+["独立咖啡馆",         "e","咖啡","锦江",2,1.5,"发呆,出片",            "镋钯街和青莲上街一条街都是"],
+["老街盖碗茶",         "e","茶","不限",1,2,  "躺平,便宜,地道",        "五块钱坐一下午, 没人赶你"],
+["鹤鸣茶社",           "e","茶","青羊",1,2,  "躺平,地道,游客多",      "人民公园里, 采耳师傅会来招呼你"],
+["酒店下午茶",         "e","咖啡","锦江",3,2,  "出片,安静",            "高层视野, 纪念日合适"],
+["甜品店",             "e","甜品","不限",2,1,  "甜,出片",              "成都甜品店密度全国前列"],
+["面包店买早餐",       "e","咖啡","不限",1,0.5,"省钱,简单",            "早上顺路买"],
+["老茶馆听龙门阵",     "e","茶","不限",1,2,  "躺平,地道,安静",        "随便找家老茶馆, 听旁边大爷聊天"],
+["精品茶室",           "e","茶","青羊",3,2,  "安静,慢,需要预约",      "文殊院附近有几家, 一泡茶坐半天"],
+
+/* ============ 吃 · 酒吧微醺 ============ */
+["精酿酒吧",           "e","酒吧","锦江",2,2,  "夜生活,安静",          "玉林和九眼桥都有, 人少说话方便"],
+["清吧",               "e","酒吧","成华",2,2,  "夜生活,安静,驻场",      "猛追湾河边那几家"],
+["小酒馆喝一杯",       "e","酒吧","武侯",2,2,  "夜生活,音乐",          "玉林路, 有现场演出"],
+["楼顶酒吧",           "e","酒吧","锦江",3,2,  "夜生活,出片",          "看夜景, 贵但值一次"],
+["威士忌吧",           "e","酒吧","锦江",3,2,  "夜生活,安静,小贵",      "太古里周边, 适合聊天"],
+["路边摊喝啤酒",       "e","酒吧","不限",1,1.5,"夜生活,便宜,热闹",      "烧烤摊配冰啤, 夏天最舒服"],
+
+/* ============ 吃 · 早餐早茶 ============ */
+["肥肠粉当早餐",       "e","面食","不限",1,0.5,"早餐,地道",            "上班路上也能吃"],
+["酒店自助早餐",       "e","西餐","锦江",3,1.5,"慢,请客",              "周末早上慢慢吃, 当早午餐"],
+["广式早茶",           "e","粤菜","不限",2,2,  "慢,清淡",              "虾饺烧卖凤爪, 点一桌"],
+["豆浆油条",           "e","早餐","不限",1,0.5,"早餐,便宜",            "最普通的早饭, 但很少专门去吃"],
+
+/* ============ 吃 · 家里也能算 ============ */
+["自己煮一锅小面",     "e","面食","不限",1,0.7,"省钱,家里",            "不用出门, 但要说好谁洗碗"],
+["点外卖在家吃",       "e","不限","不限",1,1,  "躺平,省钱,家里",        "摇到这个就认命, 至少点个没点过的"],
+["一起做一顿饭",       "e","不限","不限",1,2,  "省钱,家里,体验",        "分工, 一个做菜一个打下手"]
+];
+
+</script>
+<script>
+/* 今天干嘛 · 灵感池 · v1 · 2026-09-25
+   格式 [名称, 类型, 子类, 区域, 价位, 时长h, 标签, 贴士, 来源]
+   来源: news = 公开报道整理 / ai = AI 生成, 去之前请自行确认 */
+
+window.IDEA_RAW = [
+
+/* ---------- 公开报道整理 ---------- */
+["中医解暑观光巴士","p","体验","成华",2,2,"户外,体验,出片,小众","周末开行,串东郊记忆 万象城 太古里, 车上能做香囊喝解暑茶","news"],
+["拓竹科技3D打印首店","p","体验","成华",2,1.5,"室内,体验,亲子","万象城里, 自己建模一键打印, 打完能拿走","news"],
+["帕帕拉兹热带雨林快闪展","p","展览","高新",2,1.5,"室内,亲子,小众","大魔方招商花园城, 能近距离看爬宠","news"],
+["成都自然博物馆夜宿","p","体验","成华",3,14,"室内,亲子,需要预约","在马门溪龙化石旁搭帐篷过夜, 名额很少要抢","news"],
+["博物馆奇妙耶公益研学","p","体验","不限",1,3,"室内,免费,亲子,需要预约","全市24家文博场馆几十场免费活动, 关注文旅局公众号报名","news"],
+["望江楼非遗小工匠研学","p","体验","武侯",1,2.5,"户外,体验,亲子","在薛涛井旁听故事, 动手做一张薛涛笺","news"],
+["杜甫草堂中医药药圃","p","体验","青羊",2,1.5,"户外,体验,小众","草堂里开放的中药圃体验区, 能实地认草药","news"],
+["天府艺术公园青年艺术季","p","展览","金牛",1,2,"室内,免费,出片","天府艺术公园美术馆特展, 装置艺术多, 免预约","news"],
+["成都科幻馆无人机表演","p","夜生活","郫都",1,1,"户外,免费,出片,需要预约","周末晚八点五千架无人机, 拼三星堆和飞船图案","news"],
+["蜀宴赋沉浸式餐秀","p","体验","成华",3,2.5,"室内,体验,出片,需要预约","东郊记忆里, 边吃边看汉文化演出, 换装拍照","news"],
+["大旗茶馆看变脸","p","体验","青羊",2,2,"室内,体验,小众","老漆器厂爆改的茶馆, 楼下看变脸楼上做漆器","news"],
+["大话蜀汉宴游洛带","p","体验","龙泉",3,2.5,"户外,体验,出片","洛带古镇里, 可餐可茶可戏的三国主题","news"],
+["铁像寺水街夜游","p","街区","高新",2,2,"户外,出片,夜生活","古风建筑晚上打灯, 水边吃饭喝茶都舒服","news"],
+["东郊记忆成都墙打卡","p","园区","成华",1,0.5,"户外,免费,出片","成都舞台旁边那面巨幅墙, 排队拍照的人不断","news"],
+["抚琴夜市糖油果子","e","小吃","金牛",1,0.5,"小吃,夜市,现炸","现炸外脆里糯, 排队最久那家就是","news"],
+["中医夜市","p","街区","不限",1,2,"户外,免费,小众,夜生活","把脉推拿香囊摊摆到夜市里, 全城轮流办","news"],
+["坝坝电影","p","活动","不限",1,2.5,"户外,免费,躺平,夏夜","社区和公园露天放电影, 自带板凳和小风扇","news"],
+["社区食堂探店","e","川菜","不限",1,1,"省钱,家常,小众","一荤一素十几块, 老年人多但味道实在","news"],
+
+/* ---------- AI 生成, 去之前确认 ---------- */
+["城市漫步定一个主题","p","活动","不限",1,3,"户外,免费,轻运动,出片","比如今天只走成都的桥, 或者只走梧桐树多的街","ai"],
+["摇摆舞社交舞会","p","活动","锦江",2,3,"室内,体验,社交,夜生活","成都每周都有固定的摇摆舞局, 新手场会教基础步","ai"],
+["即兴戏剧体验场","p","活动","锦江",2,2,"室内,体验,社交","不用背台词, 现场给题目直接演, 比看演出好玩","ai"],
+["天台电影院","p","活动","成华",2,2.5,"户外,出片,夜生活","不少楼顶酒吧会放老电影, 提前问那天放什么","ai"],
+["咖啡面包市集","p","街区","不限",1,2,"户外,免费,小吃,周末","成都周末常有咖啡和面包主题市集, 关注本地号","ai"],
+["精酿节","p","活动","锦江",2,4,"户外,热闹,夜生活","一整条街的本地精酿厂牌, 按杯买边走边喝","ai"],
+["桨板体验","p","运动","天府",3,2,"户外,体力活,玩水","兴隆湖和锦江部分河段有, 会游泳再去","ai"],
+["腰旗橄榄球局","p","运动","高新",2,2,"户外,体力活,社交","社交平台上随便搜, 基本都是拼场新手局","ai"],
+["夜跑团","p","运动","不限",1,1.5,"户外,轻运动,免费,社交","锦城湖和桂溪公园晚上有固定团, 配速分组","ai"],
+["独立书店读书会","p","活动","锦江",1,2,"室内,安静,社交","一苇书坊这类书店常有, 一般免费但要报名","ai"],
+["剧本围读","p","活动","锦江",2,3,"室内,体验,安静","几个人分角色读一个剧本, 比剧本杀轻松","ai"],
+["手作市集淘东西","p","街区","不限",2,2,"户外,出片,周末","陶器 香薰 手工皂, 东西不贵但很容易买多","ai"],
+["黑胶唱片店淘碟","p","街区","锦江",2,1.5,"室内,安静,小众","成都还有几家老唱片店, 老板会给你放来听","ai"],
+["城市观鸟","p","户外","锦江",1,2,"户外,免费,安静","白鹭湾和青龙湖, 带上望远镜和一本图鉴","ai"],
+["植物园夜游","p","户外","不限",2,2,"户外,小众,夜生活","夏天特定日子开到晚上, 比白天凉快也有意思","ai"],
+["龙泉山观星","p","户外","龙泉",1,3,"户外,免费,夜生活,小众","避开满月, 山上看银河比市区清楚得多","ai"],
+["房车露营","p","活动","温江",3,8,"户外,出片,需要预约","近郊有房车营地, 一车住两人, 自带食材最好","ai"],
+["一日咖啡地图","e","咖啡","锦江",2,4,"咖啡,出片,轻运动","一天只喝三家, 每家点一种不重复的, 走完就饱了","ai"],
+["黑胶加咖啡的下午","e","咖啡","锦江",2,2,"室内,安静,发呆","找家放黑胶的咖啡馆, 什么都不干坐一下午","ai"],
+["火锅巴士","p","体验","锦江",2,2,"体验,小众,出片","边坐车逛城边吃火锅, 关注本地生活号有没有开","ai"],
+["无人驾驶体验","p","体验","天府",1,1,"体验,小众,免费","部分区域有自动驾驶接驳车, 路过就上去坐一站","ai"],
+["低空观光飞行","p","体验","龙泉",3,1.5,"体验,出片,需要预约","直升机或动力伞观光, 贵但视角确实不一样","ai"],
+["汉服City Walk","p","活动","青羊",2,4,"出片,体验,需要预约","宽窄巷子周边租一套, 走一圈回头率很高","ai"],
+["一人食探店","e","不限","不限",1,1.5,"安静,小众,省钱","挑家吧台座的店, 一个人也不尴尬","ai"],
+["小众剧场看沉浸式戏剧","p","演出","锦江",2,2.5,"室内,演出,需要预约","几百块的小剧场, 演员就在你旁边演","ai"],
+["老茶馆听评书","e","茶","不限",1,2,"躺平,地道,安静","点一壶茶坐着听, 听不懂也没关系","ai"],
+["早午餐巡礼","e","西餐","锦江",3,2,"慢,出片,周末","睡到十一点出门, 找家有院子的吃一上午","ai"],
+["陶艺夜市","p","街区","不限",1,2,"户外,体验,夜市","晚上摆出来的手作摊, 能现场捏个小东西","ai"],
+["老厂房改造空间探店","p","园区","成华",1,3,"户外,出片,小众","成都这类新空间越来越多, 挑没去过的进","ai"]
+];
+
+</script>
+<script>
+/* 今天干嘛 · app.js */
+(function(){
+'use strict';
+
+/* ===================== 常量 ===================== */
+var KEY = 'jtmgz_v1';
+var CITY = ['锦江','青羊','金牛','武侯','成华','高新','天府'];
+var NEAR = ['龙泉','温江','双流','郫都','新都','新津','金堂'];
+var AREAS = {
+  '锦江':[104.081,30.657],'青羊':[103.980,30.674],'金牛':[104.048,30.707],
+  '武侯':[104.043,30.642],'成华':[104.102,30.668],'高新':[104.066,30.573],
+  '天府':[104.068,30.420],'龙泉':[104.275,30.561],'温江':[103.856,30.682],
+  '双流':[103.923,30.575],'郫都':[103.888,30.809],'新都':[104.159,30.823],
+  '新津':[103.810,30.410],'金堂':[104.412,30.862],'都江堰':[103.617,30.988],
+  '崇州':[103.673,30.630],'彭州':[103.958,30.990],'大邑':[103.511,30.587],
+  '邛崃':[103.464,30.410]
+};
+var FAR = ['都江堰','崇州','彭州','大邑','邛崃'];
+var ROW_H = 104;
+
+var IC_PLAY = '<svg viewBox="0 0 24 24"><path d="M2.5 20L9 7.5l4.2 7.2L16.4 10 22 20H2.5Z" fill="currentColor"/></svg>';
+var IC_EAT  = '<svg viewBox="0 0 24 24"><path d="M2 11.5h20a10 10 0 0 1-20 0Z" fill="currentColor"/><path d="M9 3.5v5M12 2.5v6M15 3.5v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"/></svg>';
+var IC_BOOK = '<svg viewBox="0 0 24 24"><path d="M4 4.5h6a3 3 0 0 1 3 3v12a2.4 2.4 0 0 0-2.4-2.4H4V4.5Z" fill="currentColor"/><path d="M20 4.5h-6a3 3 0 0 0-3 3v12a2.4 2.4 0 0 1 2.4-2.4H20V4.5Z" fill="currentColor" opacity=".5"/></svg>';
+var IC_MOON = '<svg viewBox="0 0 24 24"><path d="M15.5 2.5a9.5 9.5 0 1 0 6 15.2A8 8 0 0 1 15.5 2.5Z" fill="currentColor"/></svg>';
+var IC_SPORT= '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v18M3.5 12h17" stroke="currentColor" stroke-width="1.5" opacity=".55"/></svg>';
+
+var C_PURPLE='#6C5CE7', C_CORAL='#FF6B4A', C_MINT='#17B890', C_AMBER='#F5A623', C_BLUE='#3B8DF0';
+var RAMP = [C_PURPLE, C_CORAL, C_MINT, C_AMBER, C_BLUE];
+
+var EAT_WORDS = ['吃','餐','饭','火锅','串串','烧烤','咖啡','茶','酒','面','粉','甜品','小吃','包','饼','日料','烤肉','brunch','西餐','食堂','早餐','夜宵','汤','鸭','鸡','鱼','牛','饺','抄手','锅盔','兔'];
+var BOOK_SUBS = ['书店','展览','博物馆'];
+var NIGHT_SUBS = ['夜生活','演出','酒吧'];
+var SPORT_SUBS = ['运动'];
+
+/* ===================== 状态 ===================== */
+function defState(){
+  return {
+    cond:{scope:'city',traffic:'car',budget:0,energy:'any',len:'full',repeat:'norepeat'},
+    custom:[], banned:[], fav:[], recent:[], combos:[],
+    amapKey:'', amapArea:'锦江', live:[], ideasSeen:[],
+    cand:[]
+  };
+}
+var S = defState();
+
+function load(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(raw){
+      var o = JSON.parse(raw);
+      var d = defState();
+      for(var k in d){ if(o[k]!==undefined) d[k]=o[k]; }
+      for(var k2 in d.cond){ if(!o.cond || o.cond[k2]===undefined) d.cond[k2]=defState().cond[k2]; }
+      S = d;
+    }
+  }catch(e){ S = defState(); }
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+}
+
+/* ===================== 数据 ===================== */
+var LIB = [];
+function buildLib(){
+  var raw = window.POOL_RAW || [];
+  LIB = raw.map(function(r,i){ return mk(r[0],r[1],r[2],r[3],r[4],r[5],r[6],r[7],'L'+i,'lib'); });
+}
+function mk(name,type,sub,area,price,dur,tags,tip,id,src){
+  return {
+    id:id, name:name, type:type, sub:sub, area:area,
+    price:price||2, dur:dur||2,
+    tags:String(tags||'').split(',').map(function(s){return s.trim();}).filter(Boolean),
+    tip:tip||'', src:src||'lib'
+  };
+}
+function allItems(){
+  return LIB.concat(S.custom, S.live);
+}
+function byId(id){
+  var a = allItems();
+  for(var i=0;i<a.length;i++){ if(a[i].id===id) return a[i]; }
+  return null;
+}
+function isBanned(id){ return S.banned.indexOf(id)>=0; }
+function isFav(id){ return S.fav.indexOf(id)>=0; }
+function inCity(it){ return it.area==='不限' || CITY.indexOf(it.area)>=0; }
+function isFar(it){ return FAR.indexOf(it.area)>=0; }
+function hasTag(it,t){ return it.tags.indexOf(t)>=0; }
+function subIn(it,arr){ return arr.indexOf(it.sub)>=0; }
+
+function walkable(it){
+  if(it.area!=='不限' && CITY.indexOf(it.area)<0) return false;
+  if(it.type==='e') return it.price<=2;
+  return ['公园','街区','活动','咖啡','茶'].indexOf(it.sub)>=0 || it.dur<=1.5;
+}
+
+/* ===================== 筛选与抽取 ===================== */
+var LIGHT_SUBS = ['甜品','咖啡','茶'];                 /* 不适合当正餐 */
+var FULL_SUBS  = ['火锅','串串','川菜','家常','面食','烧烤','夜宵','异国','粤菜','日料','韩餐','西餐','素食','早餐','不限'];
+
+function isNightOnly(it){
+  return hasTag(it,'夜生活') || it.sub==='酒吧' || it.sub==='夜生活';
+}
+function passesCond(it){
+  var c = S.cond;
+  if(isBanned(it.id)) return false;
+  if(c.scope==='city' && !inCity(it)) return false;
+  if(c.scope==='near' && isFar(it)) return false;
+  if(c.budget>0 && it.price>Number(c.budget)) return false;
+  if(c.energy==='chill' && hasTag(it,'体力活')) return false;
+  if(c.traffic==='walk' && !walkable(it)) return false;
+  if(c.repeat==='norepeat' && S.recent.indexOf(it.id)>=0 && !isFav(it.id)) return false;
+  return true;
+}
+function poolOf(type, skipIds){
+  var skip = skipIds||[];
+  return allItems().filter(function(it){
+    if(it.type!==type) return false;
+    if(skip.indexOf(it.id)>=0) return false;
+    return passesCond(it);
+  });
+}
+function relaxed(type, skipIds){
+  var p = poolOf(type, skipIds);
+  if(p.length>=4) return p;
+  var old = S.cond;
+  var tmp = JSON.parse(JSON.stringify(old));
+  tmp.repeat = 'allow'; tmp.energy = 'any'; tmp.budget = 0; tmp.traffic = 'car';
+  S.cond = tmp;
+  p = poolOf(type, skipIds);
+  S.cond = old;
+  if(p.length) return p;
+  return allItems().filter(function(it){ return it.type===type && !isBanned(it.id); });
+}
+function weighted(p){
+  if(!p || !p.length) return null;
+  var tot=0, w=[];
+  for(var i=0;i<p.length;i++){ var x = isFav(p[i].id)?3:1; w.push(x); tot+=x; }
+  var r = Math.random()*tot;
+  for(var j=0;j<p.length;j++){ r-=w[j]; if(r<=0) return p[j]; }
+  return p[p.length-1];
+}
+/* 软过滤：候选够多才剔除，否则保留，避免筛到没东西 */
+function soft(list, fn, min){
+  var f = list.filter(fn);
+  return f.length >= (min||6) ? f : list;
+}
+function pickItem(type, skipIds){ return weighted(relaxed(type, skipIds)); }
+
+function pickPlay(skip, isMorning){           /* 白天玩：排除只有晚上才成立的 */
+  var p = relaxed('p', skip);
+  p = soft(p, function(it){ return !isNightOnly(it); }, 6);
+  /* "住一晚"这类整日项目塞不进一天的格子 */
+  p = soft(p, function(it){ return (it.dur||2) < 12; }, 6);
+  /* 上午别排长项目，否则"午饭"要排到下午去；下午也别长到把晚上拖进后半夜 */
+  if(isMorning) p = soft(p, function(it){ return (it.dur||2) <= 3; }, 6);
+  else          p = soft(p, function(it){ return (it.dur||2) <= 5; }, 6);
+  return weighted(p) || pickItem('p', skip);
+}
+function pickMeal(skip, isLunch){              /* 饭点：优先正餐，中午排除夜宵和酒吧 */
+  var p = relaxed('e', skip);
+  p = soft(p, function(it){ return FULL_SUBS.indexOf(it.sub)>=0; }, 8);
+  p = soft(p, function(it){ return LIGHT_SUBS.indexOf(it.sub)<0; }, 8);
+  if(isLunch){
+    p = soft(p, function(it){ return !hasTag(it,'夜宵') && it.sub!=='酒吧'; }, 8);
+  }
+  return weighted(p) || pickItem('e', skip);
+}
+function pickNight(skip){                      /* 晚上那一站 */
+  var p = allItems().filter(function(it){
+    return isNightOnly(it) && skip.indexOf(it.id)<0 && passesCond(it);
+  });
+  if(p.length<3){
+    p = allItems().filter(function(it){ return isNightOnly(it) && skip.indexOf(it.id)<0 && !isBanned(it.id); });
+  }
+  return weighted(p);
+}
+
+/* ===================== 时间轴 ===================== */
+var plan = [];
+function fmt(m){ m = Math.round(m/10)*10; var h=Math.floor(m/60), mi=m%60; return (h<10?'0':'')+h+':'+(mi<10?'0':'')+mi; }
+/* 排到半夜以后写"次日 01:10"，不印 25:10 这种怪时间 */
+function fmtWrap(m){
+  m = Math.round(m/10)*10;
+  var next = false;
+  while(m >= 1440){ m -= 1440; next = true; }
+  var h = Math.floor(m/60), mi = m%60;
+  return (next?'次日 ':'') + (h<10?'0':'')+h+':'+(mi<10?'0':'')+mi;
+}
+
+function buildPlan(rolls){
+  plan = [];
+  var half = S.cond.len==='half';
+  var t = 10*60;
+  var used = [];
+
+  if(rolls[0]){ plan.push({t:t,label:'玩',type:'p',item:rolls[0],slot:0}); t += rolls[0].dur*60; used.push(rolls[0].id); }
+  if(rolls[1]){ t = Math.max(t+40, 12*60); plan.push({t:t,label:'午饭',type:'e',item:rolls[1],slot:1}); t += rolls[1].dur*60; used.push(rolls[1].id); }
+  if(half) return;
+
+  if(rolls[2]){ t = Math.max(t+40, 14*60); plan.push({t:t,label:'玩',type:'p',item:rolls[2],slot:2}); t += rolls[2].dur*60; used.push(rolls[2].id); }
+
+  var din = pickMeal(used, false);
+  if(din){ t = Math.max(t+40, 18*60); plan.push({t:t,label:'晚饭',type:'e',item:din,slot:3,auto:true}); t += din.dur*60; used.push(din.id); }
+
+  var night = pickNight(used);
+  if(night){ t = Math.max(t+40, 20*60); plan.push({t:t,label:'晚上',type:night.type,item:night,slot:4,auto:true}); }
+}
+
+/* ===================== 摇 ===================== */
+var rolls = [null,null,null];
+var rolling = false;
+
+function iconOf(it){
+  if(subIn(it,BOOK_SUBS)) return IC_BOOK;
+  if(subIn(it,NIGHT_SUBS)) return IC_MOON;
+  if(subIn(it,SPORT_SUBS)) return IC_SPORT;
+  return it.type==='e' ? IC_EAT : IC_PLAY;
+}
+function colorOf(it){
+  var s = it.sub||'x', h=0;
+  for(var i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  return RAMP[h % RAMP.length];
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function slotLabel(i){
+  if(i===0) return '上午 · 玩';
+  if(i===1) return '中午 · 吃';
+  if(i===2) return '下午 · 玩';
+  return '晚上 · 吃';
+}
+function cellHTML(it,label){
+  if(!it) return '<div class="cell"><div class="nm" style="color:var(--ink3)">—</div></div>';
+  return '<div class="cell">'+
+    '<div class="ic" style="color:'+colorOf(it)+'">'+iconOf(it)+'</div>'+
+    '<div class="tag">'+esc(label)+'</div>'+
+    '<div class="nm">'+esc(it.name)+'</div>'+
+  '</div>';
+}
+function reelEls(){ return Array.prototype.slice.call(document.querySelectorAll('#reels .reel')); }
+
+function rollReel(reel, item, dur){
+  var strip = reel.querySelector('.strip');
+  var type = reel.getAttribute('data-type');
+  var label = reel.getAttribute('data-label');
+  var filler = [];
+  var src = relaxed(type, []);
+  for(var i=0;i<18;i++){ filler.push(src[Math.floor(Math.random()*src.length)]); }
+  var seq = filler.concat([item]);
+  strip.innerHTML = seq.map(function(x){ return cellHTML(x,label); }).join('');
+  strip.style.transition = 'none';
+  strip.style.transform = 'translateY(0px)';
+  void strip.offsetHeight;
+  strip.style.transition = 'transform '+dur+'s cubic-bezier(.13,.75,.24,1)';
+  strip.style.transform = 'translateY(' + (-(seq.length-1)*ROW_H) + 'px)';
+}
+
+function doSpin(){
+  if(rolling) return;
+  rolling = true;
+  var btn = document.getElementById('btnSpin');
+  btn.disabled = true;
+  btn.textContent = '在摇了…';
+  var mach = document.getElementById('machine');
+  mach.classList.add('rolling');
+  document.getElementById('lever').classList.add('pulled');
+  if(navigator.vibrate) try{ navigator.vibrate([12,40,12]); }catch(e){}
+
+  var els = reelEls();
+  var half = S.cond.len==='half';
+  var count = half ? 2 : 3;
+  var types = half ? ['p','e'] : ['p','e','p'];
+  var used = [];
+
+  for(var i=0;i<count;i++){
+    var it = i===1 ? pickMeal(used, true) : pickPlay(used, i===0);
+    if(it) used.push(it.id);
+    rolls[i] = it;
+  }
+  if(half) rolls[2] = null;
+
+  var longest = 0;
+  for(var j=0;j<els.length;j++){
+    if(j>=count){ els[j].style.visibility='hidden'; continue; }
+    els[j].style.visibility='visible';
+    var d = 1.05 + j*0.26;
+    if(d>longest) longest = d;
+    (function(el,item,delay){
+      setTimeout(function(){ rollReel(el, item, delay); }, 60);
+    })(els[j], rolls[j], d);
+  }
+
+  setTimeout(function(){
+    mach.classList.remove('rolling');
+    document.getElementById('lever').classList.remove('pulled');
+    for(var k=0;k<count;k++){ els[k].classList.add('win'); (function(e){ setTimeout(function(){e.classList.remove('win');},450); })(els[k]); }
+    if(navigator.vibrate) try{ navigator.vibrate(16); }catch(e){}
+    // 记录
+    for(var m=0;m<count;m++){
+      var id = rolls[m] && rolls[m].id;
+      if(id && S.recent.indexOf(id)<0) S.recent.unshift(id);
+    }
+    if(S.recent.length>90) S.recent = S.recent.slice(0,90);
+    buildPlan(rolls);
+    save();
+    renderPlan();
+    rolling = false;
+    btn.disabled = false;
+    btn.textContent = '再 拉 一 下';
+  }, 60 + (longest*1000) + 260);
+}
+
+function spinOne(idx){
+  if(rolling) return;
+  if(S.cond.len==='half' && idx>1) return;
+  rolling = true;
+  var el = reelEls()[idx];
+  var used = rolls.filter(Boolean).map(function(x){return x.id;});
+  var it = idx===1 ? pickMeal(used, true) : pickPlay(used, idx===0);
+  rolls[idx] = it;
+  el.classList.add('win');
+  rollReel(el, it, 1.15);
+  setTimeout(function(){
+    el.classList.remove('win');
+    if(it && S.recent.indexOf(it.id)<0) S.recent.unshift(it.id);
+    if(S.recent.length>90) S.recent = S.recent.slice(0,90);
+    buildPlan(rolls);
+    renderPlan(); save();
+    rolling = false;
+  }, 1350);
+}
+
+function swapPlanRow(slot){
+  if(rolling) return;
+  var used = rolls.filter(Boolean).map(function(x){return x.id;});
+  if(slot===3 || slot===4){
+    plan.forEach(function(p){ if(p.slot===3 || p.slot===4) used.push(p.item.id); });
+    if(slot===3){
+      var din = pickMeal(used, false);
+      plan.forEach(function(p){ if(p.slot===3) p.item = din; });
+    }else{
+      var nt = pickNight(used);
+      plan.forEach(function(p){ if(p.slot===4) p.item = nt; });
+    }
+    renderPlan(); save();
+    return;
+  }
+  spinOne(slot);
+}
+
+/* ===================== 渲染 ===================== */
+function $(id){ return document.getElementById(id); }
+
+function renderCond(){
+  var c = S.cond;
+  document.querySelectorAll('#condCard .chips').forEach(function(g){
+    var k = g.getAttribute('data-k');
+    g.querySelectorAll('.chip').forEach(function(b){
+      b.classList.toggle('on', String(c[k])===b.getAttribute('data-v'));
+    });
+  });
+  var names = {city:'主城区',near:'含近郊',any:'不限'};
+  var bud = {0:'不限',1:'50内',2:'100内',3:'200内'};
+  var en = {chill:'躺平',any:'随便',active:'想动'};
+  var tr = {car:'开车',metro:'地铁',walk:'走路'};
+  $('condSum').textContent = names[c.scope]+' · '+tr[c.traffic]+' · '+bud[c.budget]+' · '+en[c.energy]+' · '+(c.len==='half'?'半天':'一整天');
+  $('amapKey').value = S.amapKey || '';
+  renderLiveNote();
+}
+function renderLiveNote(){
+  var n = $('liveNote');
+  var cnt = (S.live||[]).length;
+  if(cnt){
+    n.innerHTML = '已有 <b>'+cnt+'</b> 条实时数据参与摇号。高德个人配额有限，不用频繁拉。';
+  }else if(S.amapKey){
+    n.textContent = 'Key 已保存。点「拉取附近」按当前位置或所选区域拉一批真实营业的店。';
+  }else{
+    n.textContent = '不填也能用。填了可以按当前位置拉一次真实营业的店，拉完存本地，之后摇杆秒回。';
+  }
+}
+
+function renderMachine(){
+  var els = reelEls();
+  var half = S.cond.len==='half';
+  els.forEach(function(el,i){
+    var label = el.getAttribute('data-label');
+    if(half && i===2){ el.style.visibility='hidden'; return; }
+    el.style.visibility='visible';
+    var strip = el.querySelector('.strip');
+    var cur = rolls[i];
+    var type = el.getAttribute('data-type');
+    if(!cur){ var tmp = relaxed(type,[]); cur = tmp[0] || null; }
+    strip.innerHTML = cellHTML(cur,label);
+    strip.style.transition='none';
+    strip.style.transform='translateY(0px)';
+  });
+  if(S.cond.len==='half'){ els[2].style.visibility='hidden'; }
+}
+
+function renderPlan(){
+  var box = $('planBox'), acts = $('planActs');
+  if(!plan.length){
+    box.innerHTML = '<div class="plan-empty">还没摇。<br>拉一下那根杆，今天就不用想了。</div>';
+    acts.style.display='none';
+    $('planCount').textContent='';
+    return;
+  }
+  var html = '<div class="tl">';
+  plan.forEach(function(p,i){
+    var it = p.item;
+    if(!it) return;
+    var col = colorOf(it);
+    var kindTxt = p.label || (p.type==='e' ? '吃' : '玩');
+    var meta = [];
+    if(it.area && it.area!=='不限') meta.push(it.area);
+    if(it.dur) meta.push(it.dur>=24?'住一晚':('约 '+it.dur+' 小时'));
+    if(it.price) meta.push(it.price===1?'便宜':it.price===2?'人均中档':'人均偏高');
+    var tags = it.tags.slice(0,4).map(function(t){ return '<span class="tg">'+esc(t)+'</span>'; }).join('');
+    html += '<div class="tl-row">'+
+      '<div class="tl-time">'+fmtWrap(p.t)+'</div>'+
+      '<div class="tl-rail"><i style="background:'+col+'"></i><s></s></div>'+
+      '<div class="tl-body">'+
+        '<div class="k">'+esc(kindTxt)+'</div>'+
+        '<div class="v">'+esc(it.name)+'</div>'+
+        '<div class="p">'+meta.join(' · ')+'</div>'+
+        (it.tip?'<div class="p" style="color:var(--ink3)">'+esc(it.tip)+'</div>':'')+
+        '<div class="tags">'+tags+'</div>'+
+        '<div class="tl-acts"><button class="mini" data-swap="'+p.slot+'">换一个</button>'+
+        (p.auto?'<span class="mini gray">自动补的</span>':'')+
+        (it.src==='live'?'<span class="mini gray">实时</span>':'')+
+        '</div>'+
+      '</div></div>';
+  });
+  html += '</div>';
+  box.innerHTML = html;
+  acts.style.display='flex';
+  var n = plan.length;
+  var end = plan[n-1].t + (plan[n-1].item.dur||2)*60;
+  $('planCount').textContent = fmtWrap(plan[0].t)+' — '+fmtWrap(end);
+}
+
+/* ---------- 灵感 ---------- */
+function guessType(s){
+  for(var i=0;i<EAT_WORDS.length;i++){
+    if(s.toLowerCase().indexOf(EAT_WORDS[i].toLowerCase())>=0) return 'e';
+  }
+  return 'p';
+}
+function parsePaste(txt){
+  var parts = txt.split(/\n+|。|！|？|；|;|(?:\d{1,2}[\.、)）])/);
+  var out = [], seen = {};
+  parts.forEach(function(s){
+    s = s.trim().replace(/^[-•·*\s]+/,'').replace(/^[\(（].{0,3}[\)）]/,'').trim();
+    if(s.length<2 || s.length>38) return;
+    if(seen[s]) return; seen[s]=1;
+    out.push({ name:s, type:guessType(s) });
+  });
+  return out.slice(0,20);
+}
+function renderCand(){
+  var box = $('candBox'), card = $('candCard');
+  if(!S.cand.length){ card.style.display='none'; box.innerHTML=''; return; }
+  card.style.display='block';
+  $('candCount').textContent = S.cand.length + ' 条';
+  box.innerHTML = S.cand.map(function(c,i){
+    return '<div class="item">'+
+      '<div class="bul '+(c.type==='e'?'e':'p')+'">'+(c.type==='e'?'吃':'玩')+'</div>'+
+      '<div class="bd"><div class="h">'+esc(c.name)+'</div>'+
+      '<div class="s">我猜是'+(c.type==='e'?'吃的':'玩的')+'，点一下能改</div></div>'+
+      '<div class="op">'+
+      '<button class="icon-btn" data-flip="'+i+'" title="切换类型"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8h13l-3-3M20 16H7l3 3" stroke="#6B6862" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'+
+      '<button class="icon-btn add" data-cadd="'+i+'" title="加进池子"><svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#0E8E6E" stroke-width="2.2" stroke-linecap="round"/></svg></button>'+
+      '<button class="icon-btn del" data-cdel="'+i+'" title="不要"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#E0522F" stroke-width="2.2" stroke-linecap="round"/></svg></button>'+
+      '</div></div>';
+  }).join('');
+}
+function addCustom(name,type,sub,tip,src){
+  var it = mk(name,type,sub||'自定义','不限',1,1.5,'','' ,
+    'U'+Date.now()+Math.floor(Math.random()*1000), src||'user');
+  if(tip) it.tip = tip;
+  if(sub) it.sub = sub;
+  S.custom.unshift(it);
+  return it;
+}
+function renderIdeas(){
+  var all = window.IDEA_RAW || [];
+  if(!all.length) return;
+  var unseen = [];
+  all.forEach(function(r,i){ if(S.ideasSeen.indexOf('I'+i)<0) unseen.push(i); });
+  if(unseen.length < 6){ S.ideasSeen = []; unseen = all.map(function(_,i){ return i; }); }
+  var pool = unseen.slice(), idx = [];
+  while(idx.length<6 && pool.length){
+    idx.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  }
+  idx.forEach(function(i){ if(S.ideasSeen.indexOf('I'+i)<0) S.ideasSeen.push('I'+i); });
+  $('ideaBox').innerHTML = idx.map(function(i){
+    var r = all[i];
+    var src = r[8]==='news' ? '<span class="tg b">报道</span>' : '<span class="tg a">AI</span>';
+    return '<div class="item">'+
+      '<div class="bul '+(r[1]==='e'?'e':'p')+'">'+(r[1]==='e'?'吃':'玩')+'</div>'+
+      '<div class="bd"><div class="h">'+esc(r[0])+'</div>'+
+      '<div class="s">'+esc(r[3]||'不限')+' · '+(r[5]||2)+' 小时</div>'+
+      '<div class="t">'+esc(r[7]||'')+'</div>'+
+      '<div class="tags">'+src+'</div></div>'+
+      '<div class="op">'+
+      '<button class="icon-btn add" data-iadd="'+i+'" title="加进池子"><svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M12 5v14M5 12h14" stroke="#0E8E6E" stroke-width="2.2" stroke-linecap="round"/></svg></button>'+
+      '<button class="icon-btn" data-iskip="'+i+'" title="不感兴趣"><svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M6 6l12 12M18 6L6 18" stroke="#6B6862" stroke-width="2.2" stroke-linecap="round"/></svg></button>'+
+      '</div></div>';
+  }).join('');
+  save();
+}
+
+/* ---------- 池子 ---------- */
+var poolTab = 'all', poolQ = '';
+function renderPool(){
+  var list;
+  if(poolTab==='u') list = S.custom.slice();
+  else if(poolTab==='x') list = S.banned.map(byId).filter(Boolean);
+  else list = allItems().filter(function(it){ return poolTab==='all' || it.type===poolTab; });
+
+  if(poolQ){
+    var q = poolQ.toLowerCase();
+    list = list.filter(function(it){
+      return (it.name+' '+it.area+' '+it.sub+' '+(it.tags||[]).join(' ')).toLowerCase().indexOf(q)>=0;
+    });
+  }
+  var CAP = 40;
+  var more = list.length > CAP ? list.length - CAP : 0;
+  list = list.slice(0, CAP);
+
+  if(!list.length){
+    $('poolBox').innerHTML = '<div class="empty"><b>这里没东西</b>去灵感页挑几个，或者在下面手动加一条</div>';
+  }else{
+    $('poolBox').innerHTML = list.map(function(it){
+      var banned = isBanned(it.id);
+      return '<div class="item">'+
+        '<div class="bul '+(it.type==='e'?'e':'p')+'">'+(it.type==='e'?'吃':'玩')+'</div>'+
+        '<div class="bd"><div class="h">'+esc(it.name)+'</div>'+
+        '<div class="s">'+esc(it.sub)+' · '+esc(it.area)+' · '+(it.src==='live'?'实时数据':it.src==='lib'?'内容库':'我加的')+'</div>'+
+        (it.tip?'<div class="t">'+esc(it.tip)+'</div>':'')+
+        '</div>'+
+        '<div class="op">'+
+        '<button class="icon-btn" data-fav="'+it.id+'" title="常去，多摇到"><svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" stroke="'+(isFav(it.id)?'#F5A623':'#6B6862')+'" stroke-width="1.6" fill="'+(isFav(it.id)?'#F5A623':'none')+'"/></svg></button>'+
+        '<button class="icon-btn '+(banned?'add':'del')+'" data-ban="'+it.id+'" title="'+(banned?'恢复':'拉黑')+'">'+
+          (banned
+            ? '<svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M4 12h16" stroke="#0E8E6E" stroke-width="2.2" stroke-linecap="round"/></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" width="15" height="15"><path d="M6 6l12 12M18 6L6 18" stroke="#E0522F" stroke-width="2.2" stroke-linecap="round"/></svg>')+
+        '</button></div>'+
+      '</div>';
+    }).join('');
+    if(more>0) $('poolBox').innerHTML += '<div class="note">还有 '+more+' 条没显示。切上面分类，或者搜名字 / 区域 / 标签。</div>';
+  }
+  $('statNote').innerHTML = '内容库 '+LIB.length+' 条 · 我加的 '+S.custom.length+' 条 · 实时 '+(S.live||[]).length+
+    ' 条 · 拉黑 '+S.banned.length+' 条 · 最近摇过 '+S.recent.length+' 条';
+  renderCombos();
+}
+function renderCombos(){
+  var box = $('comboBox');
+  if(!S.combos.length){ box.innerHTML = '<div class="empty" style="padding:18px">摇出满意的组合，点「存进池子」就会留在这里</div>'; return; }
+  box.innerHTML = S.combos.slice(0,20).map(function(c,i){
+    return '<div class="item">'+
+      '<div class="bul p">'+(i+1)+'</div>'+
+      '<div class="bd"><div class="h">'+esc(c.title)+'</div>'+
+      '<div class="t">'+esc(c.body)+'</div></div>'+
+      '<div class="op"><button class="icon-btn del" data-cdelcombo="'+i+'"><svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#E0522F" stroke-width="2.2" stroke-linecap="round"/></svg></button></div>'+
+    '</div>';
+  }).join('');
+}
+
+/* ===================== 高德实时 ===================== */
+function amapKey(){ return (S.amapKey||'').trim(); }
+function fetchLive(){
+  var key = amapKey();
+  if(!key){ toast('先填高德 Key'); return; }
+  var run = function(lng,lat,label){
+    var tasks = [
+      {types:'050000|050500', radius:3000, kind:'e', label:label},
+      {types:'110000|110100|060300', radius:5000, kind:'p', label:label}
+    ];
+    var got = [], total = tasks.length, doneN = 0, netErr = 0;
+    $('btnLive').textContent = '拉取中…';
+    tasks.forEach(function(t){
+      var url = 'https://restapi.amap.com/v3/place/around?key='+encodeURIComponent(key)+
+        '&location='+lng.toFixed(6)+','+lat.toFixed(6)+
+        '&types='+encodeURIComponent(t.types)+
+        '&radius='+t.radius+'&offset=25&page=1&extensions=base';
+      fetch(url).then(function(r){ return r.json(); }).then(function(j){
+        if(j && j.status==='0'){
+          netErr++;
+        }
+        if(j && j.pois){
+          j.pois.forEach(function(p){
+            got.push({
+              id:'R'+p.id, name:p.name, type:t.kind,
+              sub:subFromType(p.type), area:t.label,
+              price:2, dur:t.kind==='e'?1.5:2,
+              tags:['实时','附近'],
+              tip:(p.address&&typeof p.address==='string'?p.address:'')+(p.distance?' · 约'+Math.round(Number(p.distance))+'米':''),
+              src:'live', dist:Number(p.distance||9999)
+            });
+          });
+        }
+        doneN++;
+        if(doneN===total){ finish(); }
+      }).catch(function(){ doneN++; netErr++; if(doneN===total) finish(); });
+    });
+    function finish(){
+      got = got.filter(function(x){ return x.name && x.dist<=4000; })
+               .sort(function(a,b){ return a.dist-b.dist; }).slice(0,120);
+      S.live = got;
+      save(); renderLiveNote(); renderPool();
+      if(got.length){
+        $('btnLive').textContent = '已拉 '+got.length+' 条';
+        toast('拉到 '+got.length+' 条附近数据，已经进池子了');
+      }else{
+        $('btnLive').textContent = '拉取失败';
+        toast(netErr>=total
+          ? '被浏览器拦了。这个页面是本地打开的，联网请求会被拦，用本地池就行'
+          : '没拉到数据，看看 Key 和类型权限对不对');
+      }
+      setTimeout(function(){ $('btnLive').textContent='拉取附近'; },2600);
+    }
+  };
+  var fallback = function(){
+    var a = S.amapArea || '锦江';
+    var c = AREAS[a] || AREAS['锦江'];
+    run(c[0], c[1], a);
+  };
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      function(p){ run(p.coords.longitude, p.coords.latitude, '我附近'); },
+      fallback, {timeout:6000, maximumAge:60000}
+    );
+  } else fallback();
+}
+function subFromType(t){
+  if(!t) return '附近';
+  var a = String(t).split(';')[0].split('|');
+  var last = a[a.length-1] || '附近';
+  return last.length>6 ? last.slice(-4) : last;
+}
+
+/* ===================== 交互绑定 ===================== */
+function toast(msg){
+  var t = $('toast');
+  t.textContent = msg;
+  t.classList.add('on');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ t.classList.remove('on'); }, 2100);
+}
+
+function bind(){
+  // 条件折叠
+  $('condHead').addEventListener('click', function(){ $('condCard').classList.toggle('open'); });
+  document.querySelectorAll('#condCard .chips').forEach(function(g){
+    g.addEventListener('click', function(e){
+      var b = e.target.closest('.chip'); if(!b) return;
+      var k = g.getAttribute('data-k');
+      S.cond[k] = (k==='budget') ? Number(b.getAttribute('data-v')) : b.getAttribute('data-v');
+      save(); renderCond();
+      if(k==='len'){ renderMachine(); if(plan.length){ buildPlan(rolls); renderPlan(); } }
+    });
+  });
+
+  // 拉杆
+  var lever = $('lever'), dragging=false, y0=0;
+  lever.addEventListener('pointerdown', function(e){ dragging=true; y0=e.clientY; lever.setPointerCapture(e.pointerId); });
+  lever.addEventListener('pointermove', function(e){
+    if(!dragging) return;
+    if(e.clientY - y0 > 26){ dragging=false; lever.classList.add('pulled'); doSpin();
+      setTimeout(function(){ lever.classList.remove('pulled'); }, 700); }
+  });
+  lever.addEventListener('pointerup', function(){ dragging=false; });
+  lever.addEventListener('click', function(){ if(!dragging) doSpin(); });
+
+  // 摇
+  $('btnSpin').addEventListener('click', doSpin);
+  document.querySelectorAll('#reels .reel').forEach(function(el,i){
+    el.addEventListener('click', function(){ spinOne(i); });
+  });
+
+  // 计划操作
+  $('planBox').addEventListener('click', function(e){
+    var b = e.target.closest('[data-swap]');
+    if(b) swapPlanRow(Number(b.getAttribute('data-swap')));
+  });
+  $('btnRerollAll').addEventListener('click', doSpin);
+  $('btnSaveCombo').addEventListener('click', function(){
+    if(!plan.length) return;
+    var title = fmtWrap(plan[0].t)+' 出发 · '+plan.length+' 站';
+    var body = plan.map(function(p){
+      return fmtWrap(p.t)+' '+(p.label||'')+' '+p.item.name;
+    }).join('  /  ');
+    S.combos.unshift({ title:title, body:body });
+    S.combos = S.combos.slice(0,30);
+    save(); renderCombos();
+    toast('存好了，在「池子」里能看到');
+  });
+  $('btnCopyPlan').addEventListener('click', function(){
+    if(!plan.length){ toast('先摇一次'); return; }
+    var txt = '今天这样过\n' + plan.map(function(p){
+      return fmtWrap(p.t)+'  '+(p.label||'')+'  '+p.item.name+(p.item.tip?'（'+p.item.tip+'）':'');
+    }).join('\n');
+    if(copy(txt)) toast('计划已复制，可以直接发给她');
+    else toast('复制没成功，长按下面文字自己选');
+  });
+
+  // 灵感
+  $('btnParse').addEventListener('click', function(){
+    var t = $('pasteBox').value.trim();
+    if(!t){ toast('先粘点东西进来'); return; }
+    var arr = parsePaste(t);
+    if(!arr.length){ toast('没解析出条目，一行一个试试'); return; }
+    S.cand = arr; save(); renderCand();
+    $('pasteBox').value='';
+    toast('解析出 '+arr.length+' 条，确认一下');
+  });
+  $('btnPasteClear').addEventListener('click', function(){ $('pasteBox').value=''; });
+  $('candBox').addEventListener('click', function(e){
+    var f = e.target.closest('[data-flip]'), a = e.target.closest('[data-cadd]'), d = e.target.closest('[data-cdel]');
+    if(f){ var i=Number(f.getAttribute('data-flip')); S.cand[i].type = S.cand[i].type==='e'?'p':'e'; save(); renderCand(); }
+    else if(a){ var j=Number(a.getAttribute('data-cadd')); addCustom(S.cand[j].name,S.cand[j].type); S.cand.splice(j,1); save(); renderCand(); renderPool(); toast('加进池子了'); }
+    else if(d){ S.cand.splice(Number(d.getAttribute('data-cdel')),1); save(); renderCand(); }
+  });
+  $('btnCandAll').addEventListener('click', function(){
+    S.cand.forEach(function(c){ addCustom(c.name,c.type); });
+    var n = S.cand.length; S.cand=[]; save(); renderCand(); renderPool();
+    toast('加了 '+n+' 条');
+  });
+  $('btnMoreIdeas').addEventListener('click', function(){ renderIdeas(); });
+  $('ideaBox').addEventListener('click', function(e){
+    var a = e.target.closest('[data-iadd]'), k = e.target.closest('[data-iskip]');
+    if(a){
+      var i = Number(a.getAttribute('data-iadd')), r = window.IDEA_RAW[i];
+      addCustom(r[0], r[1], r[2], r[7], 'idea');
+      S.ideasSeen.push('I'+i); save(); renderPool();
+      a.closest('.item').style.opacity='.45';
+      a.disabled = true; toast('已加进池子');
+    }else if(k){
+      S.ideasSeen.push('I'+k.getAttribute('data-iskip')); save();
+      k.closest('.item').style.display='none';
+    }
+  });
+
+  // 池子
+  $('poolSeg').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    poolTab = b.getAttribute('data-v');
+    $('poolSeg').querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x===b); });
+    renderPool();
+  });
+  $('poolSearch').addEventListener('input', function(){ poolQ = $('poolSearch').value.trim(); renderPool(); });
+  $('poolBox').addEventListener('click', function(e){
+    var f = e.target.closest('[data-fav]'), b = e.target.closest('[data-ban]');
+    if(f){
+      var id = f.getAttribute('data-fav'), i = S.fav.indexOf(id);
+      if(i>=0) S.fav.splice(i,1); else S.fav.push(id);
+      save(); renderPool();
+    }else if(b){
+      var id2 = b.getAttribute('data-ban'), j = S.banned.indexOf(id2);
+      if(j>=0) S.banned.splice(j,1); else S.banned.push(id2);
+      save(); renderPool();
+    }
+  });
+  $('addType').addEventListener('click', function(e){
+    var b = e.target.closest('.chip'); if(!b) return;
+    $('addType').querySelectorAll('.chip').forEach(function(x){ x.classList.toggle('on', x===b); });
+  });
+  $('btnAdd').addEventListener('click', function(){
+    var n = $('addName').value.trim();
+    if(!n){ toast('写个名字'); return; }
+    var t = $('addType').querySelector('.chip.on').getAttribute('data-v');
+    addCustom(n,t); $('addName').value=''; save(); renderPool(); renderPool();
+    toast('加好了');
+  });
+  $('comboBox').addEventListener('click', function(e){
+    var d = e.target.closest('[data-cdelcombo]');
+    if(d){ S.combos.splice(Number(d.getAttribute('data-cdelcombo')),1); save(); renderCombos(); }
+  });
+  $('comboClear').addEventListener('click', function(){ S.combos=[]; save(); renderCombos(); toast('清空了'); });
+  $('btnResetRecent').addEventListener('click', function(){ S.recent=[]; save(); renderPool(); toast('「摇过的」记录清了，老地方会重新出现'); });
+  $('btnResetAll').addEventListener('click', function(){
+    if(!confirm('会清掉你自己加的所有条目和收藏，确定吗？')) return;
+    localStorage.removeItem(KEY); S = defState(); location.reload();
+  });
+
+  // 实时
+  $('amapKey').addEventListener('change', function(){ S.amapKey = $('amapKey').value.trim(); save(); renderLiveNote(); });
+  $('amapKey').addEventListener('blur', function(){ S.amapKey = $('amapKey').value.trim(); save(); renderLiveNote(); });
+  $('btnLive').addEventListener('click', fetchLive);
+  $('btnLiveClear').addEventListener('click', function(){ S.live=[]; save(); renderLiveNote(); renderPool(); toast('实时数据清了'); });
+
+  // 导航
+  $('nav').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    var p = b.getAttribute('data-p');
+    $('nav').querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x===b); });
+    $('pgRoll').classList.toggle('hide', p!=='roll');
+    $('pgIdea').classList.toggle('hide', p!=='idea');
+    $('pgPool').classList.toggle('hide', p!=='pool');
+    window.scrollTo({top:0, behavior:'smooth'});
+    if(p==='pool') renderPool();
+    if(p==='idea') renderIdeas();
+  });
+}
+
+function copy(txt){
+  if(navigator.clipboard && navigator.clipboard.writeText && window.isSecureContext){
+    navigator.clipboard.writeText(txt).catch(function(){ legacyCopy(txt); });
+    return true;
+  }
+  return legacyCopy(txt);
+}
+function legacyCopy(t){
+  var ta = document.createElement('textarea');
+  ta.value = t; ta.style.position='fixed'; ta.style.top='0'; ta.style.left='0';
+  ta.style.opacity='0.01'; ta.style.fontSize='16px';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select();
+  ta.setSelectionRange(0, t.length);
+  var ok = false;
+  try{ ok = document.execCommand('copy'); }catch(e){ ok = false; }
+  document.body.removeChild(ta);
+  return ok;
+}
+
+/* ===================== 启动 ===================== */
+function initDate(){
+  var d = new Date();
+  var w = ['日','一','二','三','四','五','六'][d.getDay()];
+  $('dToday').textContent = (d.getMonth()+1)+' 月 '+d.getDate()+' 日';
+  $('dWeek').textContent = '星期'+w;
+}
+
+function init(){
+  load(); buildLib(); initDate(); bind(); renderCond(); renderMachine(); renderPlan();
+  save();
+  var first = new Date().getHours();
+  if(first>=6 && first<11) $('condCard').classList.add('open');
+}
+
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+
+})();
+
+</script>
+</body>
+</html>

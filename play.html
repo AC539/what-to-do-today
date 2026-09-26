@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#FFE1EE">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="今天干嘛">
+<meta name="format-detection" content="telephone=no">
+<title>今天干嘛</title>
+<style>
+/* ============================================================
+   今天干嘛 · 手机版 · Q 版老虎机外形
+   外形语言移植自用户的「萌虎幸运机」：
+   橙色机身 + 虎耳 + 萌脸 + 灯带招牌 + 跑马灯泡 + 拉杆 + 糖果按钮
+   逻辑与数据仍是本项目自己的。
+   --cell 只影响视觉，JS 运行时量 reel.clientHeight，不必同步常量。
+   ============================================================ */
+:root{
+  --cell:168px;
+  --orange:#FF9E4F;      /* 机身主色 */
+  --orange-d:#E07B2E;    /* 深橙（虎纹/阴影） */
+  --pink:#FF8FB1;        /* 粉装饰 */
+  --pink-d:#F4517F;      /* 深粉（拉杆球/强调） */
+  --cream:#FFF6E5;       /* 米白（招牌/底色） */
+  --brown:#7A4A21;       /* 主文字色 */
+  --yellow:#FFE27A;      /* 灯泡黄 */
+  --ink3:#B99169;        /* 弱文字 */
+  --cute:"Yuanti SC","YouYuan","ZCOOL KuaiLe","PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;height:100%}
+body{
+  color:var(--brown);
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.55) 2.5px, transparent 3px) 0 0/30px 30px,
+    linear-gradient(165deg,#FFF6DE 0%,#FFE1EE 55%,#DDF2FF 100%);
+  background-attachment:fixed;
+  -webkit-font-smoothing:antialiased;
+  -webkit-touch-callout:none;
+  touch-action:manipulation;
+  overflow:hidden;
+  user-select:none;
+  overscroll-behavior:none;
+}
+
+.stage{
+  width:100%;max-width:480px;height:100vh;height:100dvh;margin:0 auto;
+  display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top,20px) + 6px) 13px calc(env(safe-area-inset-bottom,16px) + 10px);
+  position:relative;
+  overflow:hidden;
+}
+
+/* ---------- 背景漂浮装饰 ---------- */
+.float-emoji{
+  position:absolute;font-size:22px;opacity:.6;z-index:0;pointer-events:none;
+  animation:floaty 6s ease-in-out infinite;
+}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-14px) rotate(8deg)}}
+
+/* ---------- 顶栏：日期 + 声音 ---------- */
+.topbar{
+  position:relative;z-index:5;flex:0 0 auto;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:2px 1px 0;
+}
+.date-pill{
+  display:flex;align-items:center;background:rgba(255,255,255,.88);
+  border-radius:999px;padding:8px 16px;
+  box-shadow:0 3px 0 rgba(214,140,60,.35), 0 6px 14px rgba(180,90,60,.15);
+  font-weight:800;font-size:14px;color:var(--brown);letter-spacing:.5px;
+}
+.icon-btn{
+  width:44px;height:44px;padding:0;border:3px solid #fff;border-radius:50%;
+  background:linear-gradient(180deg,#FFD98A,#FFB84D);
+  box-shadow:0 3px 0 #DE9340, 0 6px 12px rgba(180,90,60,.2);
+  font-size:17px;line-height:1;display:grid;place-items:center;
+}
+.icon-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #DE9340}
+.icon-btn.dim{filter:grayscale(.55) brightness(1.06)}
+
+/* ---------- 机器区 ---------- */
+.marea{
+  flex:1 1 auto;min-height:0;position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:26px 0 4px;   /* 上面留出虎耳 */
+}
+
+.machine{
+  position:relative;width:96%;
+  background:linear-gradient(180deg,#FFC069 0%,#FF9E4F 78%,#F58A3C 100%);
+  border:4px solid rgba(255,255,255,.7);border-radius:44px;
+  padding:14px 16px 18px;
+  box-shadow:0 16px 30px rgba(190,95,30,.28),
+             inset 0 5px 0 rgba(255,255,255,.5),
+             inset 0 -9px 0 rgba(150,70,10,.14);
+  transform-origin:50% 60%;
+  animation:wiggle 6s ease-in-out infinite;
+}
+@keyframes wiggle{0%,100%{transform:rotate(0)}50%{transform:rotate(.3deg)}}
+.machine.rolling{animation:rumble .12s linear infinite}
+@keyframes rumble{
+  0%{transform:translate(0,0) rotate(0)}
+  25%{transform:translate(-1.6px,.7px) rotate(-.25deg)}
+  50%{transform:translate(1.4px,-.9px) rotate(.25deg)}
+  75%{transform:translate(-.9px,-.6px) rotate(.15deg)}
+  100%{transform:translate(1px,.8px) rotate(-.15deg)}
+}
+.machine.ding{animation:ding .5s cubic-bezier(.34,1.7,.5,1)}
+@keyframes ding{
+  0%{transform:scale(1)}
+  35%{transform:scale(1.035) translateY(-3px)}
+  65%{transform:scale(.99) translateY(1px)}
+  100%{transform:scale(1)}
+}
+
+/* 虎耳 */
+.ear{
+  position:absolute;top:-22px;width:62px;height:54px;background:var(--orange);
+  border:4px solid rgba(255,255,255,.7);border-bottom:none;
+  border-radius:50% 50% 46% 54% / 72% 72% 30% 30%;z-index:0;
+}
+.ear::after{content:"";position:absolute;inset:12px 15px 6px;background:#FFB3C6;border-radius:inherit}
+.ear.l{left:30px;transform:rotate(-14deg)}
+.ear.r{right:30px;transform:rotate(14deg)}
+.machine.rolling .ear.l,.machine.ding .ear.l{animation:earwigL .32s ease-in-out infinite alternate}
+.machine.rolling .ear.r,.machine.ding .ear.r{animation:earwigR .32s .08s ease-in-out infinite alternate}
+@keyframes earwigL{from{transform:rotate(-14deg) scale(1)}to{transform:rotate(-6deg) scale(1.07)}}
+@keyframes earwigR{from{transform:rotate(14deg) scale(1)}to{transform:rotate(6deg) scale(1.07)}}
+
+/* 灯带招牌 */
+.marquee{
+  position:relative;z-index:2;background:var(--cream);border-radius:22px;
+  padding:7px 10px 8px;margin-bottom:8px;
+  box-shadow:inset 0 3px 8px rgba(150,80,20,.18), 0 3px 0 rgba(255,255,255,.5);
+}
+.bulbs{display:flex;justify-content:space-between;padding:1px 6px}
+.bulb{
+  width:8px;height:8px;border-radius:50%;background:var(--yellow);
+  animation:glow 1.1s ease-in-out infinite alternate;
+}
+.bulb:nth-child(even){background:#FFAFCE;animation-delay:.55s}
+@keyframes glow{
+  from{opacity:.35;box-shadow:0 0 0 rgba(255,210,90,0)}
+  to{opacity:1;box-shadow:0 0 8px 2px rgba(255,200,90,.85)}
+}
+.machine.rolling .bulb{animation-duration:.22s}
+.mtitle{
+  text-align:center;font-family:var(--cute);font-size:27px;font-weight:700;
+  color:#E2683C;letter-spacing:3px;line-height:1.12;margin-top:1px;
+  text-shadow:0 2px 0 #FFE3C2;
+}
+.msub{text-align:center;font-size:9px;font-weight:800;letter-spacing:3.4px;color:#C98B4E;margin-top:1px}
+
+/* 萌脸 */
+.face{position:relative;width:178px;height:62px;margin:6px auto 2px;z-index:2}
+.eye{
+  position:absolute;top:2px;width:33px;height:33px;background:#fff;border-radius:50%;
+  display:grid;place-items:center;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.05), 0 2px 4px rgba(150,80,20,.2);
+  animation:blink 4.6s infinite;
+}
+.eye.l{left:20px}
+.eye.r{right:20px}
+.eye i{width:14px;height:14px;background:#4A2C17;border-radius:50%;position:relative}
+.eye i::after{content:"";position:absolute;top:2px;left:2.5px;width:5px;height:5px;background:#fff;border-radius:50%}
+@keyframes blink{0%,91%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.blush{position:absolute;top:28px;width:22px;height:11px;background:#FFB3C6;border-radius:50%;opacity:.85}
+.blush.l{left:2px}
+.blush.r{right:2px}
+.nose{
+  position:absolute;top:33px;left:50%;transform:translateX(-50%);
+  width:18px;height:14px;background:var(--pink-d);border-radius:46% 46% 60% 60%;
+}
+.mouth{position:absolute;top:46px;left:50%;transform:translateX(-50%);width:30px;height:12px}
+.mouth::before,.mouth::after{
+  content:"";position:absolute;top:0;width:13px;height:8px;
+  border:3px solid #A5583F;border-top:none;border-radius:0 0 14px 14px;
+}
+.mouth::before{left:0}
+.mouth::after{right:0}
+.st{position:absolute;width:17px;height:6px;background:var(--orange-d);border-radius:4px;opacity:.85}
+.st.s1{left:0;top:6px;transform:rotate(-68deg)}
+.st.s2{left:-6px;top:18px;transform:rotate(-90deg)}
+.st.s3{left:0;top:30px;transform:rotate(-112deg)}
+.st.s4{right:0;top:6px;transform:rotate(68deg)}
+.st.s5{right:-6px;top:18px;transform:rotate(90deg)}
+.st.s6{right:0;top:30px;transform:rotate(112deg)}
+
+/* 列标题 */
+.rlabels{display:flex;gap:7px;margin:2px 0 7px;position:relative;z-index:2}
+.rl{
+  flex:1;text-align:center;font-size:11px;font-weight:800;letter-spacing:0;
+  padding:4px 0 5px;border-radius:9px;white-space:nowrap;
+  background:rgba(255,255,255,.5);color:#A56A2C;
+  box-shadow:inset 0 2px 4px rgba(150,80,20,.12);
+}
+.rl.p{background:#FFE1EC;color:#D2426E}
+.rl.e{background:#FFF0C9;color:#B07408}
+
+/* 转轮窗口 */
+.winwrap{position:relative;z-index:2}
+/* 窗口总高 = 格高 + 上下 10px 内边距，保证 .reel.clientHeight 正好等于 --cell */
+.reels-window{
+  position:relative;height:calc(var(--cell) + 20px);
+  background:#FFFDF6;border-radius:22px;padding:10px;
+  box-shadow:inset 0 5px 12px rgba(150,80,20,.22);
+  display:flex;gap:7px;overflow:hidden;
+}
+.reel{
+  flex:1;border-radius:14px;overflow:hidden;position:relative;
+  background:linear-gradient(180deg,#FFFFFF,#FFF3E0);
+  box-shadow:inset 0 3px 7px rgba(150,80,20,.16);
+}
+.reel::before,.reel::after{content:"";position:absolute;left:0;right:0;height:26px;z-index:2;pointer-events:none}
+.reel::before{top:0;background:linear-gradient(180deg,rgba(200,120,40,.22),transparent)}
+.reel::after{bottom:0;background:linear-gradient(0deg,rgba(200,120,40,.22),transparent)}
+.strip{position:absolute;left:0;right:0;top:0;will-change:transform}
+.strip.moving{filter:blur(1.5px) saturate(1.25)}
+.reel.win{animation:pop .45s cubic-bezier(.34,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.07)}100%{transform:scale(1)}}
+
+.cell{
+  height:var(--cell);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;padding:8px 3px;text-align:center;
+}
+.cell .badge{
+  width:44px;height:44px;flex:0 0 44px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 0 rgba(0,0,0,.08), inset 0 -2px 0 rgba(0,0,0,.07);
+}
+.cell .badge svg{width:24px;height:24px;display:block}
+.cell .nm{
+  font-size:13px;font-weight:700;line-height:1.24;color:var(--brown);
+  word-break:break-all;text-wrap:balance;
+  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;
+}
+.cell .tg{font-size:10px;font-weight:600;color:var(--ink3);letter-spacing:0}
+.cell .area{
+  font-size:9.5px;font-weight:700;color:#B0703A;
+  background:rgba(255,180,90,.26);border-radius:7px;padding:1px 6px;line-height:1.5;
+}
+.cell.blank .nm{color:var(--ink3);font-weight:600}
+.cell.blank .badge{background:rgba(255,180,90,.3)!important;color:var(--ink3)}
+
+.pay-arrow{
+  position:absolute;top:50%;transform:translateY(-50%);z-index:4;
+  font-size:12px;color:var(--pink-d);text-shadow:0 1px 0 #fff;pointer-events:none;
+}
+.pay-arrow.l{left:1px}
+.pay-arrow.r{right:1px}
+
+/* 信息横幅 */
+.win-banner{
+  min-height:30px;margin:9px 4px 0;text-align:center;position:relative;z-index:2;
+  font-family:var(--cute);font-size:17px;font-weight:700;color:#7A4A21;
+  text-shadow:0 1px 0 rgba(255,255,255,.6);
+}
+.win-banner.pop{animation:pop2 .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pop2{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}
+
+/* 拉杆（挂在窗口右侧，探出机器外面）
+   注意：原版的黄色杆子放在橙色机身上是看不见的，这里换成奶白杆 + 深棕底座 */
+.lever{
+  position:absolute;right:-34px;bottom:-46px;
+  width:32px;height:132px;z-index:3;cursor:grab;touch-action:none;
+}
+.lever-base{
+  position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  width:28px;height:26px;border-radius:11px;border:3px solid rgba(255,255,255,.75);
+  background:linear-gradient(180deg,#A85A24,#7A3D12);
+  box-shadow:0 3px 6px rgba(120,60,10,.3);
+}
+.stick{
+  position:absolute;bottom:19px;left:50%;transform-origin:bottom center;
+  transform:translateX(-50%);
+  width:12px;height:86px;border-radius:7px;
+  background:linear-gradient(180deg,#FFFDF6,#E9D6B8);
+  border:2px solid rgba(150,80,20,.35);
+  transition:transform .22s cubic-bezier(.3,1.5,.5,1);
+}
+.stick .ball{
+  position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+  width:30px;height:30px;border-radius:50%;border:3px solid #fff;
+  background:radial-gradient(circle at 32% 28%, #FF9FB2, #F4517F 72%);
+  box-shadow:0 4px 8px rgba(150,40,70,.35);
+}
+.lever.pulled .stick{transform:translateX(-50%) scaleY(.42)}
+
+/* 机身里的控制区（圆钮跟原版一样长在机器底部） */
+.controls{position:relative;z-index:2;display:flex;justify-content:center;margin-top:10px}
+
+/* ---------- 按钮区（机身外面只剩"看今天的安排"） ---------- */
+.cta{
+  flex:0 0 auto;position:relative;z-index:5;
+  display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:12px;
+}
+.spin{
+  width:92px;height:92px;padding:0;border:5px solid #fff;border-radius:50%;
+  background:radial-gradient(circle at 32% 26%, #FFE98A, #FFB03A 72%);
+  box-shadow:0 7px 0 #D97A2B, 0 14px 20px rgba(150,70,10,.3);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-family:var(--cute);color:#8A4A12;
+  transition:transform .1s, box-shadow .1s;
+}
+.spin .txt{font-size:18px;font-weight:700;letter-spacing:1.5px;white-space:nowrap}
+.spin:active{transform:translateY(5px);box-shadow:0 2px 0 #D97A2B, 0 6px 10px rgba(150,70,10,.25)}
+.spin:disabled{filter:saturate(.55) brightness(.95)}
+
+.detail{
+  width:100%;height:56px;padding:0;border:0;border-radius:28px;
+  background:linear-gradient(180deg,#FF9FB2,#F4517F);
+  box-shadow:0 5px 0 #C93A64, 0 12px 18px rgba(200,60,100,.25);
+  color:#fff;font-family:var(--cute);font-size:17px;font-weight:700;letter-spacing:1.5px;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  opacity:0;transform:translateY(14px) scale(.96);pointer-events:none;
+  max-height:0;overflow:hidden;margin-top:-10px;
+  transition:opacity .3s, transform .34s cubic-bezier(.34,1.6,.5,1);
+}
+.detail.on{opacity:1;transform:none;pointer-events:auto;max-height:70px;margin-top:0}
+.detail:active{transform:translateY(4px);box-shadow:0 1px 0 #C93A64}
+.detail svg{width:17px;height:17px}
+
+/* ---------- toast ---------- */
+#toast{
+  position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,16px) + 92px);
+  transform:translate(-50%,12px);opacity:0;pointer-events:none;
+  background:rgba(122,74,33,.94);color:#fff;font-size:13px;font-weight:700;
+  padding:11px 20px;border-radius:999px;z-index:99;
+  transition:.26s;max-width:80%;text-align:center;line-height:1.5;
+}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ============================================================
+   详情卡片（Step 2）：从屏幕底部升起来，摊开一整天
+   时间轴三栏 = 时间 | 轨道(圆点+连线) | 内容卡，跟桌面版一套语言
+   ============================================================ */
+.sheet-mask{
+  position:fixed;inset:0;z-index:60;
+  background:rgba(72,38,8,.48);
+  opacity:0;pointer-events:none;transition:opacity .3s;
+  -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+}
+.sheet-mask.on{opacity:1;pointer-events:auto}
+
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:61;
+  width:100%;max-width:480px;margin:0 auto;
+  max-height:80vh;max-height:80dvh;
+  display:flex;flex-direction:column;
+  background:linear-gradient(180deg,#FFFDF6 0%,#FFF4E4 100%);
+  border:4px solid rgba(255,255,255,.85);border-bottom:none;
+  border-radius:30px 30px 0 0;
+  box-shadow:0 -12px 34px rgba(120,60,10,.32);
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 2px);
+  transform:translateY(103%);
+  transition:transform .38s cubic-bezier(.22,1.06,.36,1);
+  will-change:transform;
+}
+.sheet.on{transform:translateY(0)}
+
+.sheet-grip{
+  flex:0 0 auto;width:46px;height:5px;border-radius:3px;background:#E7CBA2;
+  margin:9px auto 4px;cursor:grab;touch-action:none;
+}
+.sheet-head{
+  flex:0 0 auto;display:flex;align-items:center;gap:8px;
+  padding:2px 14px 9px;border-bottom:2px dashed rgba(214,160,90,.34);
+  touch-action:none;
+}
+.sh-txt{flex:1;min-width:0;padding-left:2px}
+.sh-t{
+  font-family:var(--cute);font-size:21px;font-weight:700;color:#E2683C;
+  letter-spacing:1.5px;line-height:1.18;
+}
+.sh-s{
+  font-size:11.5px;font-weight:700;color:var(--ink3);margin-top:2px;
+  letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.sh-close{
+  flex:0 0 46px;width:46px;height:46px;padding:0;
+  border:3px solid #fff;border-radius:50%;
+  background:linear-gradient(180deg,#FFD98A,#FFB84D);
+  box-shadow:0 3px 0 #DE9340;
+  font-size:16px;font-weight:800;color:#8A4A12;line-height:1;
+  display:grid;place-items:center;
+}
+.sh-close:active{transform:translateY(3px);box-shadow:0 1px 0 #DE9340}
+
+.sheet-body{
+  flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:14px 14px 6px;overscroll-behavior:contain;
+}
+.tl-empty{
+  text-align:center;color:var(--ink3);font-size:13.5px;font-weight:700;
+  padding:26px 10px;line-height:1.9;
+}
+
+.tl{display:flex;flex-direction:column}
+
+.tl-row{display:grid;grid-template-columns:42px 20px 1fr;align-items:stretch}
+.tl-time{
+  font-size:12.5px;font-weight:800;color:#A56A2C;text-align:right;
+  padding:4px 6px 0 0;font-variant-numeric:tabular-nums;letter-spacing:.2px;
+}
+.tl-rail{position:relative;display:flex;justify-content:center}
+.tl-rail i{
+  position:relative;z-index:2;width:14px;height:14px;border-radius:50%;
+  margin-top:5px;border:2.5px solid #FFFDF6;
+  box-shadow:0 1px 4px rgba(150,80,20,.4);
+}
+.tl-rail s{
+  position:absolute;top:19px;bottom:-5px;width:2.5px;border-radius:2px;
+  background:rgba(206,148,74,.62);text-decoration:none;
+}
+.tl-row:last-child .tl-rail s{display:none}
+
+.tl-body{
+  background:rgba(255,255,255,.82);
+  border:2px solid rgba(255,255,255,.95);border-radius:16px;
+  padding:9px 12px 11px;margin:0 0 12px 5px;
+  box-shadow:0 3px 10px rgba(180,110,40,.13);
+}
+.tl-row:last-child .tl-body{margin-bottom:2px}
+.tl-body .k{
+  display:inline-block;font-size:10.5px;font-weight:800;color:#fff;
+  letter-spacing:.8px;padding:2.5px 9px;border-radius:9px;
+  background:linear-gradient(180deg,#FFB84D,#EE8F16);
+}
+.tl-body .k.p{background:linear-gradient(180deg,#FF9FB2,#F4517F)}
+.tl-body .k.e{background:linear-gradient(180deg,#FFC93C,#F09A18)}
+.tl-body .v{
+  font-size:15.5px;font-weight:700;color:var(--brown);line-height:1.32;
+  margin-top:5px;word-break:break-word;
+}
+.tl-body .p{font-size:11.5px;font-weight:600;color:var(--ink3);line-height:1.55;margin-top:3px}
+.tl-body .tip{font-size:11.5px;font-weight:600;color:#C2894F;line-height:1.55;margin-top:4px}
+.tl-body .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.tl-body .tags .tg{
+  font-size:10px;font-weight:700;color:#A56A2C;
+  background:rgba(255,196,110,.36);border-radius:7px;padding:2px 7px;line-height:1.5;
+}
+.tl-body .auto{
+  display:inline-block;font-size:9.5px;font-weight:700;color:#B08A62;
+  background:rgba(160,110,60,.1);border-radius:7px;padding:2.5px 7px;
+  margin-left:6px;vertical-align:1px;
+}
+
+.sheet-foot{
+  flex:0 0 auto;padding:9px 14px 14px;
+  border-top:2px dashed rgba(214,160,90,.34);
+}
+.sh-again{
+  width:100%;height:52px;padding:0;border:0;border-radius:26px;
+  background:linear-gradient(180deg,#FFD98A,#FFB03A);
+  box-shadow:0 4px 0 #D97A2B, 0 10px 16px rgba(150,70,10,.2);
+  color:#8A4A12;font-family:var(--cute);font-size:16.5px;font-weight:700;letter-spacing:2px;
+  transition:transform .1s, box-shadow .1s;
+}
+.sh-again:active{transform:translateY(4px);box-shadow:0 1px 0 #D97A2B}
+
+/* ---------- 彩带 ---------- */
+.confetti-layer{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:50}
+.confetti{position:absolute;top:-24px;border-radius:2px;animation:confetti-fall linear forwards}
+@keyframes confetti-fall{to{transform:translateY(110vh) rotate(560deg);opacity:.9}}
+
+/* ---------- 分档：按屏高放大 ---------- */
+@media (min-height:830px){
+  :root{--cell:196px}
+  .mtitle{font-size:29px}
+  .cell .badge{width:46px;height:46px;flex:0 0 46px}
+  .cell .badge svg{width:25px;height:25px}
+  .cell .nm{font-size:13.4px}
+}
+@media (min-height:920px){
+  :root{--cell:214px}
+  .mtitle{font-size:31px}
+  .face{width:190px;height:66px}
+  .eye{width:35px;height:35px}
+  .eye i{width:15px;height:15px}
+  .cell .badge{width:50px;height:50px;flex:0 0 50px}
+  .cell .badge svg{width:27px;height:27px}
+  .cell .nm{font-size:14px}
+  .cell .tg{font-size:10.5px}
+  .win-banner{font-size:18px}
+  .spin{width:98px;height:98px}
+  .spin .txt{font-size:18px}
+  .lever{height:142px}
+  .stick{height:94px}
+  .sh-t{font-size:22.5px}
+  .tl-body .v{font-size:16px}
+  .sheet{max-height:78vh;max-height:78dvh}
+}
+
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <span class="float-emoji" style="top:7%;left:2px">✨</span>
+  <span class="float-emoji" style="top:13%;right:5px;animation-delay:1.2s">🌟</span>
+  <span class="float-emoji" style="top:6%;left:53%;animation-delay:.6s">🎲</span>
+  <span class="float-emoji" style="bottom:8%;right:6px;animation-delay:1.8s">🍜</span>
+  <span class="float-emoji" style="bottom:4%;left:10px;animation-delay:2.4s">⭐</span>
+
+  <div class="topbar">
+    <div class="date-pill" id="dt">—</div>
+    <button class="icon-btn" id="btnSnd" type="button" aria-label="声音开关">🔊</button>
+  </div>
+
+  <div class="marea">
+    <div class="machine" id="machine">
+
+      <div class="ear l"></div>
+      <div class="ear r"></div>
+
+      <div class="marquee">
+        <div class="bulbs" id="bulbsTop"></div>
+        <div class="mtitle">今天干嘛</div>
+        <div class="msub">WHAT TO DO TODAY</div>
+        <div class="bulbs" id="bulbsBot"></div>
+      </div>
+
+      <div class="face">
+        <div class="st s1"></div><div class="st s2"></div><div class="st s3"></div>
+        <div class="st s4"></div><div class="st s5"></div><div class="st s6"></div>
+        <div class="eye l"><i></i></div>
+        <div class="eye r"><i></i></div>
+        <div class="blush l"></div><div class="blush r"></div>
+        <div class="nose"></div>
+        <div class="mouth"></div>
+      </div>
+
+      <div class="rlabels">
+        <span class="rl p">上午玩</span>
+        <span class="rl e">中午吃</span>
+        <span class="rl p">下午玩</span>
+        <span class="rl e">晚上吃</span>
+      </div>
+
+      <div class="winwrap">
+        <div class="reels-window" id="reels">
+          <div class="reel" data-type="p" data-label="上午玩"><div class="strip"></div></div>
+          <div class="reel" data-type="e" data-label="中午吃"><div class="strip"></div></div>
+          <div class="reel" data-type="p" data-label="下午玩"><div class="strip"></div></div>
+          <div class="reel" data-type="e" data-label="晚上吃"><div class="strip"></div></div>
+          <span class="pay-arrow l">▶</span>
+          <span class="pay-arrow r">◀</span>
+        </div>
+        <div class="lever" id="lever">
+          <div class="lever-base"></div>
+          <div class="stick"><div class="ball"></div></div>
+        </div>
+      </div>
+
+      <div class="win-banner" id="banner">拉下拉杆，好运降临～</div>
+
+      <div class="controls">
+        <button class="spin" id="btnPull" type="button">
+          <span class="txt">拉一下</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="cta">
+    <button class="detail" id="btnDetail" type="button">
+      <span>看今天的安排</span>
+      <svg viewBox="0 0 24 24" fill="none"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+</div>
+
+<!-- ===== 详情卡片：从底部升起，摊开一整天 ===== -->
+<div class="sheet-mask" id="sheetMask"></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="今天的安排" aria-hidden="true">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head">
+    <div class="sh-txt">
+      <div class="sh-t">今天的安排</div>
+      <div class="sh-s" id="sheetSub">—</div>
+    </div>
+    <button class="sh-close" id="sheetClose" type="button" aria-label="关闭">✕</button>
+  </div>
+  <div class="sheet-body" id="sheetBody"></div>
+  <div class="sheet-foot">
+    <button class="sh-again" id="sheetAgain" type="button">再摇一天</button>
+  </div>
+</section>
+
+<div id="toast"></div>
+<div class="confetti-layer" id="confettiLayer"></div>
+
+<script>
+/* 今天干嘛 · 内容池 v1 · 2026-09-25
+   格式 [名称, 类型, 子类, 区域, 价位1-3, 时长h, 标签, 贴士]
+   类型: p=玩 e=吃
+   来源说明: 本池由公开信息整理而成, 营业状态可能变化, 出门前建议电话确认。
+   新增条目请直接往对应数组里加, 然后重跑 build.py。 */
+
+window.POOL_RAW = [
+
+/* ============ 玩 · 书店阅读 ============ */
+["方所书店",           "p","书店","锦江",2,2,  "室内,安静,出片",        "太古里负一层, 傍晚人少, 看完书直接上楼吃饭"],
+["几何书店",           "p","书店","成华",2,2,  "室内,安静,出片",        "猛追湾那家是洞穴式设计, 适合拍照"],
+["钟书阁",             "p","书店","高新",2,1.5,"室内,出片",              "镜面天花板, 周末进门要排队"],
+["西西弗书店",         "p","书店","锦江",2,1,  "室内,安静",              "商场里最好找, 随便翻翻就走"],
+["一苇书坊",           "p","书店","青羊",1,2,  "室内,安静,小众",        "宽窄巷子附近的独立书店, 有猫"],
+["读本屋",             "p","书店","锦江",1,1.5,"室内,安静,小众",        "镋钯街里面, 书选得不错"],
+
+/* ============ 玩 · 展览博物馆 ============ */
+["天府艺术公园美术馆", "p","展览","金牛",1,2.5,"室内,免费,出片,雨天友好","免预约直接进, A区穹顶展厅光影好, 逛完湖边喝咖啡"],
+["成都博物馆",         "p","博物馆","青羊",1,2.5,"室内,免费,雨天友好",  "天府广场旁, 周一闭馆, 记得提前约票"],
+["成都自然博物馆",     "p","博物馆","成华",2,2.5,"室内,亲子,雨天友好",  "理工大旁边, 恐龙化石是主角, 周末人多"],
+["四川博物院",         "p","博物馆","青羊",1,2,  "室内,免费,安静",      "浣花溪边, 人比成都博物馆少, 看得舒服"],
+["成都当代影像馆",     "p","展览","金牛",2,1.5,"室内,安静,出片",        "华侨城那边, 摄影展为主, 人不多"],
+["A4美术馆",           "p","展览","天府",2,1.5,"室内,安静,出片",        "麓湖生态城里, 看完可以沿湖走走"],
+["蓝顶艺术中心",       "p","展览","锦江",2,1.5,"室内,安静,小众",        "三圣乡, 当代艺术聚集地, 看运气赶上开放"],
+["成都画院",           "p","展览","青羊",1,1,  "室内,免费,安静",        "宽窄巷子旁边, 很小很安静, 顺路逛"],
+["成都科幻馆",         "p","展览","郫都",2,2.5,"室内,出片,需要预约",    "周末晚八点有无人机表演, 票要提前三天在公众号约"],
+["川菜博物馆",         "p","博物馆","郫都",2,2,  "室内,体验,雨天友好",  "里面有全天自助小吃街, 真能吃一整天"],
+["成都美术馆",         "p","展览","青羊",1,2,  "室内,免费,安静",        "天府艺术公园旁边, 常设展免费看"],
+["建川博物馆聚落",     "p","博物馆","大邑",2,4,  "室内外,历史,体力活",  "安仁古镇那一片, 馆太多一天看不完"],
+["成都武侯祠",         "p","博物馆","武侯",2,2,  "室内外,历史,游客多",  "红墙竹影那段最出片, 和锦里连着逛"],
+["杜甫草堂",           "p","博物馆","青羊",2,2,  "室内外,历史,安静",    "往里走比门口安静得多, 旁边就是浣花溪"],
+
+/* ============ 玩 · 公园户外 ============ */
+["桂溪生态公园",       "p","公园","高新",1,2,  "户外,免费,轻运动,出片","天府大道边上, 草坪大, 适合野餐和滑板"],
+["青龙湖湿地公园",     "p","公园","成华",1,2.5,"户外,免费,轻运动,骑行","环湖骑一圈正好, 门口有租车的"],
+["兴隆湖",             "p","户外","天府",1,2.5,"户外,免费,轻运动,出片","湖很大, 日落好看, 周末人不少"],
+["白鹭湾湿地公园",     "p","公园","锦江",1,2,  "户外,免费,安静,骑行",  "三圣乡旁边, 人少, 适合什么都不干"],
+["人民公园",           "p","公园","青羊",1,1.5,"户外,免费,躺平,体验",  "鹤鸣茶社喝盖碗茶加采耳, 最成都的一下午"],
+["望江楼公园",         "p","公园","武侯",1,1.5,"户外,免费,安静",        "竹子多, 人不多, 适合慢慢走"],
+["浣花溪公园",         "p","公园","青羊",1,1.5,"户外,免费,安静",        "跟杜甫草堂挨着, 两个一起逛正好"],
+["东湖公园",           "p","公园","锦江",1,1.5,"户外,免费,出片",        "城里最近的湖, 傍晚跑步的人很多"],
+["塔子山公园",         "p","公园","成华",1,1.5,"户外,免费,亲子",        "有野餐区, 周末带垫子来的人多"],
+["交子公园",           "p","公园","高新",1,1.5,"户外,免费,夜晚",        "晚上有灯光秀, 双塔下面"],
+["天府绿道",           "p","户外","不限",1,3,  "户外,免费,轻运动,骑行",  "随便找一段入口, 骑到累为止"],
+["龙泉山看日落",       "p","户外","龙泉",1,3,  "户外,免费,出片",        "开车上山, 日落后天黑路滑慢点开"],
+["麓客岛",             "p","户外","天府",2,3,  "户外,出片,遛娃",        "麓湖里的小岛, 有草坪有集市"],
+["三圣乡花市",         "p","户外","锦江",1,2,  "户外,免费,出片",        "买两把花回家, 比市区便宜很多"],
+["青龙湖观鸟",         "p","户外","成华",1,2,  "户外,免费,安静",        "冬天候鸟多, 带个望远镜"],
+["锦城湖公园",         "p","公园","高新",1,2,  "户外,免费,轻运动",      "环湖跑道好, 适合跑步和骑车"],
+["非遗博览园",         "p","公园","青羊",1,2,  "户外,免费,小众",        "人少地大, 春天花开的时候最好"],
+["音乐百花谷",         "p","户外","新都",2,3,  "户外,出片",            "花海为主, 季节性强, 去之前看看花期"],
+
+/* ============ 玩 · 街区园区 ============ */
+["东郊记忆",           "p","园区","成华",1,3,  "户外,出片,免费,热闹",  "老厂区改造, 红砖厂房和成都墙, 常有漫展市集"],
+["U37创意仓库",        "p","园区","锦江",1,1.5,"户外,出片,小众",        "水碾河那边, 小店和文创, 人比东郊少"],
+["铁像寺水街",         "p","街区","高新",2,2,  "户外,出片,茶馆",        "古风建筑配商业, 喝茶吃饭都在一条街上"],
+["镋钯街",             "p","街区","锦江",2,1.5,"户外,出片,咖啡",        "成都小泰国, 独立咖啡馆和买手店密集"],
+["青莲上街",           "p","街区","锦江",2,1.5,"户外,出片,小众",        "社区小店一条街, 适合边逛边喝"],
+["抚琴小区老巷",       "p","街区","金牛",1,1.5,"户外,烟火气,免费,小吃","五块钱喝一下午盖碗茶, 傍晚夜市糖油果子现炸"],
+["建设路小吃街",       "p","街区","成华",1,1.5,"户外,小吃,热闹",        "电子科大旁边, 晚上才出摊, 排队是常态"],
+["太古里",             "p","街区","锦江",2,2,  "户外,出片,逛街",        "白天拍照晚上灯光好, 什么时候人都多"],
+["宽窄巷子",           "p","街区","青羊",1,1.5,"户外,游客多,出片",      "游客多但确实好看, 往旁边柿子巷走人少"],
+["锦里",               "p","街区","武侯",1,1.5,"户外,游客多,出片,夜晚","晚上红灯笼亮起来好看, 和武侯祠连着逛"],
+["香香巷望平街",       "p","街区","成华",1,1.5,"户外,免费,出片,夜生活","猛追湾河边, 咖啡馆和酒吧挤在一条街上"],
+["东门市井",           "p","街区","成华",1,1.5,"户外,免费,出片,体验",  "老成都街景复刻, 有川剧变脸和盖碗茶"],
+["文殊院街区",         "p","街区","青羊",1,1.5,"户外,免费,安静",        "庙里安静, 旁边小吃街热闹, 一动一静"],
+["青羊宫",             "p","街区","青羊",1,1,  "户外,免费,安静,历史",  "门票十块, 里面很清静"],
+["大慈寺",             "p","街区","锦江",1,1,  "户外,免费,安静",        "就在太古里里面, 闹中取静"],
+["川大望江校区",       "p","街区","武侯",1,1.5,"户外,免费,安静",        "老校区树多, 走一圈很舒服"],
+
+/* ============ 玩 · 夜生活演出 ============ */
+["玉林路小酒馆",       "p","夜生活","武侯",2,3,  "夜生活,热闹,需要预约","就是歌里那个, 听现场要早点去占位"],
+["九眼桥酒吧街",       "p","夜生活","锦江",2,3,  "夜生活,热闹",        "河边一整条, 挑一家有驻场的坐坐"],
+["339电视塔片区",      "p","夜生活","成华",2,3,  "夜生活,热闹,出片",    "塔下面一圈酒吧和Livehouse, 晚上才热闹"],
+["正火艺术中心",       "p","演出","成华",2,3,  "夜生活,演出,需要预约","东郊记忆里面, 看乐队演出, 提前买票"],
+["小酒馆空间",         "p","演出","武侯",2,2.5,"夜生活,演出,需要预约","玉林那边的新场地, 独立乐队多"],
+["过载喜剧",           "p","演出","锦江",1,2,  "室内,演出,需要预约",  "成都本土脱口秀, 小剧场, 票不贵但抢手"],
+["成都城市音乐厅",     "p","演出","武侯",2,2.5,"室内,演出,需要预约",  "音乐会为主, 穿得正式点不违和"],
+["四川大剧院",         "p","演出","青羊",2,2.5,"室内,演出,需要预约",  "话剧舞剧为主, 天府广场附近"],
+["繁星戏剧村",         "p","演出","锦江",2,2,  "室内,演出",            "小剧场话剧和沉浸式戏剧, 票价便宜"],
+["东郊记忆演艺中心",   "p","演出","成华",2,2.5,"室内,演出,需要预约",  "音乐剧和live都有, 看排期"],
+["成都城市音乐坊",     "p","夜生活","武侯",2,2,  "夜生活,音乐,出片",    "晚上有街头演出, 随便走走听听"],
+["天府双塔灯光秀",     "p","夜生活","高新",1,1,  "夜生活,免费,出片",    "金融城那边, 晚上整点有, 看完顺路吃宵夜"],
+
+/* ============ 玩 · 体验动手 ============ */
+["陶艺体验",           "p","体验","锦江",2,2.5,"室内,体验,出片,需要预约","太古里周边有店, 捏完要等烧制, 下次来取"],
+["漆器制作",           "p","体验","成华",2,2,  "室内,体验,小众",      "老漆器厂改造的大旗茶馆楼上, 楼下还能看变脸"],
+["DIY烘焙",            "p","体验","高新",2,2.5,"室内,体验,甜",        "商场里都有, 适合下雨天, 做完直接当下午茶"],
+["手冲咖啡课",         "p","体验","锦江",2,2,  "室内,体验,安静",      "不少独立咖啡馆有体验课, 提前问"],
+["攀岩馆",             "p","运动","武侯",2,2,  "室内,体力活,体验",    "第一次去玩抱石区就够, 穿运动裤"],
+["射箭馆",             "p","运动","锦江",2,1.5,"室内,体验",            "一小时一百出头, 手臂会酸"],
+["保龄球",             "p","运动","高新",2,1.5,"室内,轻运动",          "商场里都有, 人多的时候要排道"],
+["台球",               "p","运动","成华",1,1.5,"室内,轻运动",          "老球房便宜, 新球房环境好"],
+["电玩城",             "p","游戏","锦江",1,1,  "室内,轻运动",          "抓娃娃和赛车, 逛累了进去玩两把"],
+["剧本杀",             "p","游戏","锦江",2,4,  "室内,长时间,需要预约", "一场四小时起, 最好先凑够人"],
+["密室逃脱",           "p","游戏","青羊",2,1.5,"室内,需要预约",        "两人场少, 一般要拼场"],
+["桌游吧",             "p","游戏","武侯",1,2,  "室内,安静,可以耗一天","工作日人少, 老板一般会教你玩"],
+["蜀宴赋沉浸式餐秀",   "p","体验","成华",3,2.5,"室内,体验,出片,需要预约,夜生活","东郊记忆里, 边吃边看汉文化演出, 人均不便宜"],
+["大话蜀汉宴游洛带",   "p","体验","龙泉",3,2.5,"室内,体验,出片,需要预约,夜生活","洛带古镇里, 能餐能茶能戏"],
+["川剧变脸",           "p","体验","青羊",2,1.5,"室内,体验,游客向",    "悦来茶园或大旗茶馆都有, 提前订位"],
+["采耳",               "p","体验","青羊",1,0.5,"体验,躺平",            "人民公园里就有, 叮一声很上头"],
+["汉服体验拍照",       "p","体验","锦江",2,2,  "出片,体验,需要预约",  "宽窄巷子周边一大堆, 含妆造"],
+["拍照写真",           "p","体验","锦江",3,3,  "出片,需要预约",        "纪念日拍一组, 提前找摄影师"],
+["油画体验",           "p","体验","青羊",2,2.5,"室内,安静,体验",      "画完能带走, 不用基础"],
+["马术体验",           "p","体验","双流",3,1.5,"户外,体验,需要预约",  "近郊马场, 第一次就是牵着走一圈"],
+["卡丁车",             "p","运动","龙泉",2,1.5,"户外,体力活",          "近郊的赛道更长, 市区里的偏小"],
+["密室剧本一日连打",   "p","游戏","锦江",2,6,  "室内,长时间,需要预约","连着玩两三个本, 一天就过去了"],
+
+/* ============ 玩 · 活动型(不绑地点) ============ */
+["去菜市场买菜回家做饭",  "p","活动","不限",1,3,  "室内,躺平,省钱",      "挑两样没做过的菜, 一起做才有意思"],
+["找家没去过的咖啡馆坐一下午","p","活动","不限",2,2,"室内,躺平,发呆",    "地图上随便点一家, 摇到什么就是什么, 不许反悔"],
+["公园野餐",           "p","活动","不限",1,3,  "户外,免费,出片",        "带上垫子和吃的, 什么都不用买"],
+["去旧书市场淘书",     "p","活动","不限",1,2,  "室内,小众,省钱",        "送仙桥或者文殊院附近, 慢慢翻, 一本几块钱"],
+["走一条没走过的路",   "p","活动","不限",1,1.5,"户外,免费,发呆",        "不带目的地, 就在家附近走一小时"],
+["去看一场电影",       "p","活动","不限",1,2.5,"室内,躺平",            "挑个最近上映的, 别纠结评分"],
+["在家做饭加看老电影","p","活动","不限",1,4,  "室内,躺平,省钱",        "提前想好菜单, 别最后又点外卖"],
+["去大学门口吃小吃",   "p","活动","不限",1,1.5,"户外,小吃,省钱",        "川大 电子科大 西南交大 随便挑一个"],
+["骑车去找一家没吃过的面馆","p","活动","不限",1,2,"户外,轻运动,省钱",  "骑到哪儿吃到哪儿, 不许导航"],
+["去书店各挑一本书互相交换","p","活动","不限",1,2,"室内,安静",          "挑完当场交换, 各自看一小时"],
+["拼一副拼图",         "p","活动","不限",1,3,  "室内,躺平,安静",        "一千片的够耗一下午, 放着当装饰也行"],
+["整理一次家里",       "p","活动","不限",1,3,  "室内,体力活,省钱",      "扔掉一年没用的东西, 弄完心情会好"],
+["泡温泉",             "p","活动","温江",3,4,  "室内外,躺平,需要预约",  "近郊温泉, 傍晚去最舒服"],
+["露营",               "p","活动","龙泉",2,5,  "户外,出片,需要装备",    "龙泉山或近郊营地, 帐篷一般能租"],
+["去酒店住一晚",       "p","活动","锦江",3,24, "室内,躺平,换个环境",    "不用出城, 就在城里找个酒店躺一天"],
+["公园划船",           "p","活动","不限",1,1.5,"户外,轻运动,免费",      "人民公园和东湖公园都有, 划一小时正好"],
+["逛一次花鸟市场",     "p","活动","青羊",1,1.5,"户外,免费,小众",        "青石桥那边, 看鱼看花看鸟"],
+["去体育馆看一场球",   "p","活动","武侯",2,2.5,"室内,热闹,需要预约",    "川队的比赛, 现场气氛和电视完全不一样"],
+["打一场羽毛球",       "p","活动","不限",1,1.5,"室内,体力活,需要预约",  "场馆要提前订, 两个人也能打"],
+["游泳",               "p","活动","不限",2,1.5,"室内,体力活",           "找个恒温泳池, 冬天也能游"],
+
+/* ============ 玩 · 古镇近郊 ============ */
+["洛带古镇",           "p","古镇","龙泉",1,3,  "户外,免费,小吃",        "客家古镇, 伤心凉粉和油烫鹅值得吃"],
+["黄龙溪古镇",         "p","古镇","双流",1,4,  "户外,免费,玩水",        "夏天可以下河, 其他季节就是逛吃"],
+["安仁古镇",           "p","古镇","大邑",2,5,  "户外,民国风,出片",      "公馆建筑群加建川博物馆, 一天正好"],
+["平乐古镇",           "p","古镇","邛崃",1,5,  "户外,免费,玩水",        "竹溪湖边, 夏天凉快"],
+["五凤溪古镇",         "p","古镇","金堂",1,4,  "户外,免费,小众",        "人少, 沱江边, 适合发呆"],
+["街子古镇",           "p","古镇","崇州",1,5,  "户外,免费,避暑",        "青城山脚下, 光严禅院可以顺路"],
+["唐昌古镇",           "p","古镇","郫都",1,3,  "户外,免费,小众",        "常有崇宁王巡游那种民俗活动"],
+["白鹿镇",             "p","古镇","彭州",2,5,  "户外,出片,法式",        "法式风情小镇, 有音乐活动的时候更值"],
+["青城山",             "p","山水","都江堰",2,6,"户外,体力活,避暑",      "前山轻松后山累, 早点出发"],
+["都江堰景区",         "p","山水","都江堰",2,5,"户外,体力活,历史",      "和青城山能连成一天, 太赶就分两天"],
+["天台山",             "p","山水","邛崃",2,6,  "户外,体力活,避暑",      "夏天看萤火虫, 晚上住一晚"],
+["西岭雪山",           "p","山水","大邑",3,8,  "户外,体力活,需要预约",  "冬天滑雪夏天避暑, 一天来回有点赶"],
+["龙泉山爬山",         "p","山水","龙泉",1,4,  "户外,体力活,免费",      "丹景台那条线路好走, 适合新手"],
+["彭州葛仙山",         "p","山水","彭州",1,4,  "户外,体力活,小众",      "人少, 春天看花"],
+["松鼠部落",           "p","户外","温江",2,3,  "户外,亲子",            "带小孩合适, 两个人去会有点冷清"],
+["蔚然花海",           "p","户外","新津",2,3,  "户外,出片",            "季节性花海, 去之前确认花期"],
+["竹溪湖",             "p","山水","邛崃",1,3,  "户外,免费,安静",        "可以划船, 人不多"],
+
+/* ============ 吃 · 火锅串串 ============ */
+["社区老火锅",         "e","火锅","不限",2,2,  "排队久,热闹,辣",        "别去连锁, 找小区楼下招牌旧的"],
+["天星正源火锅",       "e","火锅","锦江",2,2,  "排队久,本地人,辣",      "海椒市店, 牛油锅底越煮越香, 人均八十吃到撑"],
+["钢管厂五区小郡肝",   "e","串串","成华",2,2,  "排队久,热闹",          "老牌串串, 下午五点就去排队"],
+["冒椒火辣",           "e","串串","青羊",2,1.5,"串串,排队久",          "按签算钱, 冰粉必点"],
+["马路边边麻辣烫",     "e","串串","锦江",2,1.5,"复古,热闹,出片",        "装修成八十年代, 适合拍照"],
+["玉林串串香",         "e","串串","武侯",2,2,  "夜宵,本地人",          "玉林路那一片, 深夜还开着"],
+["小龙坎",             "e","火锅","不限",3,2,  "连锁,稳定,辣",          "贵一点但不会踩雷, 外地朋友来就选这个"],
+["蜀大侠",             "e","火锅","不限",3,2,  "连锁,稳定,辣",          "同上, 出品稳"],
+["大龙燚",             "e","火锅","不限",3,2,  "连锁,稳定,辣",          "成都本地起来的连锁"],
+["冷啖杯",             "e","川菜","不限",1,1.5,"夏夜,便宜,宵夜",        "凉菜配啤酒, 成都夏天的宵夜标配"],
+["九宫格老火锅",       "e","火锅","锦江",2,2,  "辣,传统",              "九宫格不同格子火候不一样, 问老板怎么烫"],
+["鲜锅兔",             "e","川菜","不限",2,2,  "辣,自贡菜",            "自贡菜偏辣偏鲜, 不能吃辣要提前说"],
+
+/* ============ 吃 · 川菜家常 ============ */
+["明婷饭店",           "e","川菜","金牛",2,1.5,"苍蝇馆子,地道,排队久",  "脑花烧豆腐是招牌, 人均六十出头"],
+["雨田饭店",           "e","川菜","青羊",1,1,  "苍蝇馆子,地道,省钱",    "老成都家常菜, 上菜快"],
+["老妈蹄花",           "e","川菜","青羊",1,1,  "夜宵,清淡",            "半只蹄花一碗汤, 宵夜首选"],
+["陈麻婆豆腐",         "e","川菜","青羊",2,1,  "老字号,游客向",        "麻婆豆腐的祖宗, 贵但值得去一次"],
+["银杏川菜",           "e","川菜","锦江",3,2,  "正经川菜,请客",        "请客或者纪念日来这种"],
+["柴火鸡",             "e","川菜","龙泉",2,2.5,"户外,热闹,需要预约",    "现炒, 一桌人围着吃, 近郊的多"],
+["老妈爱厨",           "e","川菜","不限",2,1.5,"家常,地道",            "连锁的家常川菜, 出品稳"],
+["乐山钵钵鸡",         "e","小吃","不限",2,1,  "冷吃,小吃",            "藤椒味的最好"],
+["跷脚牛肉",           "e","川菜","不限",2,1.5,"汤菜,乐山",            "清淡不辣, 吃不了辣的时候救命"],
+["甜皮鸭",             "e","小吃","不限",2,0.5,"熟食,乐山",            "买半只回去当宵夜"],
+["自贡盐帮菜",         "e","川菜","不限",2,2,  "辣,重口",              "水煮牛肉和冷吃兔, 辣得过瘾"],
+["川北凉粉",           "e","小吃","不限",1,0.5,"小吃,便宜",            "一把凉粉一碗饭"],
+
+/* ============ 吃 · 面食小吃 ============ */
+["肥肠粉加节子",       "e","面食","不限",1,0.7,"早餐,地道,省钱",        "成都早餐天花板, 配个锅盔"],
+["甘食记",             "e","面食","青羊",1,0.7,"早餐,地道,省钱",        "老牌肥肠粉, 春熙路附近就有"],
+["龙抄手",             "e","小吃","锦江",1,1,  "老字号,游客向,小吃",    "一次点一笼各种小吃, 什么都尝一点"],
+["钟水饺",             "e","小吃","青羊",1,1,  "老字号,小吃",          "红油水饺, 甜辣口"],
+["甜水面",             "e","小吃","不限",1,0.5,"小吃,省钱",            "面条比手指粗, 酱是甜的"],
+["蛋烘糕",             "e","小吃","不限",1,0.3,"小吃,路边",            "现烤的, 加奶油肉松"],
+["糖油果子",           "e","小吃","金牛",1,0.3,"小吃,现炸,夜市",        "抚琴夜市排队最久那家就对"],
+["三大炮",             "e","小吃","青羊",1,0.3,"小吃,游客向",          "锦里和宽窄都有的表演型小吃"],
+["军屯锅盔",           "e","小吃","不限",1,0.3,"小吃,省钱",            "刚出炉的最好吃"],
+["双流老妈兔头",       "e","小吃","双流",1,1,  "地方特色",            "五香和麻辣各点一个"],
+["冒菜",               "e","小吃","不限",1,1,  "一个人也合适,省钱",    "一个人的火锅"],
+["清汤抄手",           "e","面食","不限",1,0.5,"早餐,清淡",            "红油或清汤都行"],
+["豆花面",             "e","面食","不限",1,0.5,"早餐,便宜",            "咸豆花配面, 加个蛋"],
+["凉糕凉虾",           "e","小吃","不限",1,0.5,"甜品,解辣,夏天",        "吃完火锅来一碗"],
+["烤苕皮",             "e","小吃","不限",1,0.3,"小吃,夜市",            "建设路和抚琴都有"],
+["锅巴土豆",           "e","小吃","不限",1,0.3,"小吃,夜市",            "糖醋麻辣那个味最好"],
+
+/* ============ 吃 · 烧烤夜宵 ============ */
+["何师烧烤",           "e","烧烤","不限",2,1.5,"夜宵,热闹,连锁",        "成都最稳的连锁烧烤, 深夜也开"],
+["万州烤鱼",           "e","烧烤","不限",2,1.5,"夜宵,热闹,辣",          "配啤酒, 两个人点一条就够"],
+["夜蹄花",             "e","夜宵","不限",1,1,  "夜宵,清淡",            "凌晨还开着, 喝完酒来一碗"],
+["碳烤生蚝",           "e","烧烤","不限",2,1,  "夜宵,海鲜",            "建设路和玉林都有摊"],
+["烤脑花",             "e","烧烤","不限",2,1,  "夜宵,重口",            "锡纸包着烤, 敢吃就很香"],
+["冰粉",               "e","甜品","不限",1,0.3,"甜品,解辣",            "吃完火锅必须来一碗"],
+["醪糟小汤圆",         "e","甜品","不限",1,0.5,"甜品,宵夜",            "冬天热的, 夏天冰的"],
+["锅盔夹凉粉",         "e","小吃","不限",1,0.5,"小吃,省钱",            "南充做法, 一个就饱"],
+
+/* ============ 吃 · 异国与全国菜 ============ */
+["泰式料理",           "e","异国","不限",2,1.5,"酸辣,换口味",          "成都泰餐多, 冬阴功必点"],
+["日料",               "e","日料","锦江",3,2,  "生食,安静",            "太古里周边密集, 最好提前订"],
+["韩式烤肉",           "e","韩餐","不限",3,2,  "热闹",                "人均一百多, 肉要自己烤"],
+["粤菜",               "e","粤菜","不限",2,2,  "清淡,换口味",          "吃腻了辣就来这个"],
+["新疆菜",             "e","异国","不限",2,1.5,"大份,换口味",          "大盘鸡和烤包子"],
+["云南菜",             "e","异国","不限",2,1.5,"酸辣,菌子",            "雨季来吃菌子火锅"],
+["江浙菜",             "e","粤菜","不限",2,1.5,"清淡,甜",              "换换口味"],
+["东北菜",             "e","异国","不限",2,1.5,"大份,豪爽",            "锅包肉和铁锅炖"],
+["西北面馆",           "e","面食","不限",1,1,  "面食,便宜",            "油泼面和臊子面"],
+["螺蛳粉",             "e","小吃","不限",1,0.7,"重口,便宜",            "两个人吃就都不臭了"],
+["潮汕牛肉火锅",       "e","火锅","不限",3,2,  "清淡,不辣",            "吃不了辣又想火锅就选这个"],
+["椰子鸡",             "e","火锅","不限",3,2,  "清淡,不辣",            "汤好喝, 先喝汤再吃肉"],
+
+/* ============ 吃 · 咖啡甜品下午茶 ============ */
+["独立咖啡馆",         "e","咖啡","锦江",2,1.5,"发呆,出片",            "镋钯街和青莲上街一条街都是"],
+["老街盖碗茶",         "e","茶","不限",1,2,  "躺平,便宜,地道",        "五块钱坐一下午, 没人赶你"],
+["鹤鸣茶社",           "e","茶","青羊",1,2,  "躺平,地道,游客多",      "人民公园里, 采耳师傅会来招呼你"],
+["酒店下午茶",         "e","咖啡","锦江",3,2,  "出片,安静",            "高层视野, 纪念日合适"],
+["甜品店",             "e","甜品","不限",2,1,  "甜,出片",              "成都甜品店密度全国前列"],
+["面包店买早餐",       "e","咖啡","不限",1,0.5,"省钱,简单",            "早上顺路买"],
+["老茶馆听龙门阵",     "e","茶","不限",1,2,  "躺平,地道,安静",        "随便找家老茶馆, 听旁边大爷聊天"],
+["精品茶室",           "e","茶","青羊",3,2,  "安静,慢,需要预约",      "文殊院附近有几家, 一泡茶坐半天"],
+
+/* ============ 吃 · 酒吧微醺 ============ */
+["精酿酒吧",           "e","酒吧","锦江",2,2,  "夜生活,安静",          "玉林和九眼桥都有, 人少说话方便"],
+["清吧",               "e","酒吧","成华",2,2,  "夜生活,安静,驻场",      "猛追湾河边那几家"],
+["小酒馆喝一杯",       "e","酒吧","武侯",2,2,  "夜生活,音乐",          "玉林路, 有现场演出"],
+["楼顶酒吧",           "e","酒吧","锦江",3,2,  "夜生活,出片",          "看夜景, 贵但值一次"],
+["威士忌吧",           "e","酒吧","锦江",3,2,  "夜生活,安静,小贵",      "太古里周边, 适合聊天"],
+["路边摊喝啤酒",       "e","酒吧","不限",1,1.5,"夜生活,便宜,热闹",      "烧烤摊配冰啤, 夏天最舒服"],
+
+/* ============ 吃 · 早餐早茶 ============ */
+["肥肠粉当早餐",       "e","面食","不限",1,0.5,"早餐,地道",            "上班路上也能吃"],
+["酒店自助早餐",       "e","西餐","锦江",3,1.5,"慢,请客",              "周末早上慢慢吃, 当早午餐"],
+["广式早茶",           "e","粤菜","不限",2,2,  "慢,清淡",              "虾饺烧卖凤爪, 点一桌"],
+["豆浆油条",           "e","早餐","不限",1,0.5,"早餐,便宜",            "最普通的早饭, 但很少专门去吃"],
+
+/* ============ 吃 · 家里也能算 ============ */
+["自己煮一锅小面",     "e","面食","不限",1,0.7,"省钱,家里",            "不用出门, 但要说好谁洗碗"],
+["点外卖在家吃",       "e","不限","不限",1,1,  "躺平,省钱,家里",        "摇到这个就认命, 至少点个没点过的"],
+["一起做一顿饭",       "e","不限","不限",1,2,  "省钱,家里,体验",        "分工, 一个做菜一个打下手"]
+];
+
+</script>
+<script>
+/* 今天干嘛 · 手机版 app.js
+   Step 1（已完成）：四个滚轮（上午玩 / 中午吃 / 下午玩 / 晚上吃）→ 摇 → 出结果。
+   Step 2（已完成）：点"看今天的安排"→ 底部升起卡片，摊开一整天的 5 站
+                    （上午玩 / 午饭 / 下午玩 / 晚饭 / 晚上，后两站自动补）。 */
+(function(){
+'use strict';
+
+/* ===================== 常量 ===================== */
+var KEY = 'jtmgz_phone_v1';
+var CITY = ['锦江','青羊','金牛','武侯','成华','高新','天府'];
+
+var IC_PLAY = '<svg viewBox="0 0 24 24"><path d="M2.5 20L9 7.5l4.2 7.2L16.4 10 22 20H2.5Z" fill="currentColor"/></svg>';
+var IC_EAT  = '<svg viewBox="0 0 24 24"><path d="M2 11.5h20a10 10 0 0 1-20 0Z" fill="currentColor"/><path d="M9 3.5v5M12 2.5v6M15 3.5v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" fill="none"/></svg>';
+var IC_BOOK = '<svg viewBox="0 0 24 24"><path d="M4 4.5h6a3 3 0 0 1 3 3v12a2.4 2.4 0 0 0-2.4-2.4H4V4.5Z" fill="currentColor"/><path d="M20 4.5h-6a3 3 0 0 0-3 3v12a2.4 2.4 0 0 1 2.4-2.4H20V4.5Z" fill="currentColor" opacity=".5"/></svg>';
+var IC_MOON = '<svg viewBox="0 0 24 24"><path d="M15.5 2.5a9.5 9.5 0 1 0 6 15.2A8 8 0 0 1 15.5 2.5Z" fill="currentColor"/></svg>';
+var IC_SPORT= '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 3v18M3.5 12h17" stroke="currentColor" stroke-width="1.5" opacity=".55"/></svg>';
+
+/* Q 版糖果色，跟 style.css 里的 --pink/--orange/... 一套 */
+var RAMP = ['#FF7A9C','#FF9F45','#FFC93C','#38C6D9','#7C6BF0','#5AC878','#FF6B5A'];
+
+var BOOK_SUBS  = ['书店','展览','博物馆'];
+var NIGHT_SUBS = ['夜生活','演出','酒吧'];
+var SPORT_SUBS = ['运动'];
+var LIGHT_SUBS = ['甜品','咖啡','茶'];                                   /* 不适合当正餐 */
+var FULL_SUBS  = ['火锅','串串','川菜','家常','面食','烧烤','夜宵','异国','粤菜','日料','韩餐','西餐','素食','早餐','不限'];
+
+/* ===================== 状态 ===================== */
+function defState(){
+  return { recent:[], banned:[], fav:[], mute:false, rolls:[null,null,null,null], spins:0, nightId:null };
+}
+var S = defState();
+
+function load(){
+  try{
+    var raw = localStorage.getItem(KEY);
+    if(!raw) return;
+    var o = JSON.parse(raw), d = defState();
+    for(var k in d){ if(o[k]!==undefined) d[k] = o[k]; }
+    S = d;
+  }catch(e){ S = defState(); }
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+
+/* ===================== 数据 ===================== */
+var LIB = [];
+var IDX = {};                       /* id -> item，用来把上次存的结果还原回来 */
+function mk(name,type,sub,area,price,dur,tags,tip,id){
+  return {
+    id:id, name:name, type:type, sub:sub, area:area,
+    price:price||2, dur:dur||2,
+    tags:String(tags||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean),
+    tip:tip||''
+  };
+}
+function buildLib(){
+  var raw = window.POOL_RAW || [];
+  LIB = raw.map(function(r,i){ return mk(r[0],r[1],r[2],r[3],r[4],r[5],r[6],r[7],'L'+i); });
+  IDX = {};
+  LIB.forEach(function(it){ IDX[it.id] = it; });
+}
+function byId(id){ return IDX[id] || null; }
+function hasTag(it,t){ return it.tags.indexOf(t)>=0; }
+function subIn(it,arr){ return arr.indexOf(it.sub)>=0; }
+function isNightOnly(it){ return hasTag(it,'夜生活') || it.sub==='酒吧' || it.sub==='夜生活'; }
+function isFav(id){ return S.fav.indexOf(id)>=0; }
+
+/* ===================== 抽取 ===================== */
+function soft(list,fn,min){
+  var f = list.filter(fn);
+  return f.length >= (min||6) ? f : list;
+}
+function relaxed(type,skip){
+  skip = skip||[];
+  var p = LIB.filter(function(it){
+    return it.type===type && skip.indexOf(it.id)<0 && S.banned.indexOf(it.id)<0;
+  });
+  if(!p.length) p = LIB.filter(function(it){ return it.type===type; });
+  /* 优先市内（"不限"也算），够多就只用市内的 */
+  p = soft(p, function(it){ return it.area==='不限' || CITY.indexOf(it.area)>=0; }, 8);
+  /* 优先最近没摇到过的，避免连着重复 */
+  p = soft(p, function(it){ return S.recent.indexOf(it.id)<0; }, 8);
+  return p;
+}
+function weighted(p){
+  if(!p || !p.length) return null;
+  var tot=0, w=[];
+  for(var i=0;i<p.length;i++){ var x = isFav(p[i].id)?3:1; w.push(x); tot+=x; }
+  var r = Math.random()*tot;
+  for(var j=0;j<p.length;j++){ r -= w[j]; if(r<=0) return p[j]; }
+  return p[p.length-1];
+}
+function playPool(skip,morning){
+  var p = relaxed('p', skip);
+  p = soft(p, function(it){ return !isNightOnly(it); }, 6);              /* 白天不摇夜店/酒吧 */
+  /* "住一晚"这类整日项目塞不进一天的五个格子，直接排除 */
+  p = soft(p, function(it){ return (it.dur||2) < 12; }, 6);
+  /* 上午的项目别太长，否则"午饭"要排到下午去 */
+  if(morning) p = soft(p, function(it){ return (it.dur||2) <= 3; }, 6);
+  /* 下午可以长一点，但别长到把晚上拖进后半夜 */
+  else        p = soft(p, function(it){ return (it.dur||2) <= 5; }, 6);
+  return p;
+}
+function mealPool(skip,isLunch){
+  var p = relaxed('e', skip);
+  p = soft(p, function(it){ return FULL_SUBS.indexOf(it.sub)>=0; }, 8);
+  p = soft(p, function(it){ return LIGHT_SUBS.indexOf(it.sub)<0; }, 8);   /* 甜品/咖啡/茶 不当正餐 */
+  p = soft(p, function(it){ return it.sub!=='酒吧'; }, 6);                /* 酒吧不算"吃" */
+  if(isLunch){
+    p = soft(p, function(it){ return !hasTag(it,'夜宵'); }, 8);           /* 中午别排夜宵 */
+  }
+  return p;
+}
+function pickPlay(skip,morning){ return weighted(playPool(skip,morning)); }
+function pickMeal(skip,isLunch){ return weighted(mealPool(skip,isLunch)); }
+/* 晚上那一站：只从"夜里才成立"的条目里挑（酒吧 / 夜生活 / 演出） */
+function pickNight(skip){
+  skip = skip||[];
+  var p = LIB.filter(function(it){
+    return isNightOnly(it) && skip.indexOf(it.id)<0 && S.banned.indexOf(it.id)<0;
+  });
+  if(p.length < 3) p = LIB.filter(function(it){ return isNightOnly(it) && skip.indexOf(it.id)<0; });
+  if(!p.length)    p = LIB.filter(function(it){ return isNightOnly(it); });
+  return weighted(p);
+}
+
+/* 某一列该从哪个池子里取（静置铺底和滚动填充都用它，跟正式摇的逻辑保持一致，
+   否则「中午吃」那列会飘出酒吧） */
+function reelPool(el){
+  var label = el.getAttribute('data-label');
+  if(el.getAttribute('data-type') === 'e') return mealPool([], label === '中午吃');
+  return playPool([], label === '上午玩');
+}
+
+/* ===================== 小工具 ===================== */
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function colorOf(it){
+  var s = it.sub||'x', h = 0;
+  for(var i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  return RAMP[h % RAMP.length];
+}
+function iconOf(it){
+  if(subIn(it,BOOK_SUBS))  return IC_BOOK;
+  if(subIn(it,NIGHT_SUBS)) return IC_MOON;
+  if(subIn(it,SPORT_SUBS)) return IC_SPORT;
+  return it.type==='e' ? IC_EAT : IC_PLAY;
+}
+var tTimer=null;
+function toast(m){
+  var t = document.getElementById('toast');
+  t.textContent = m;
+  t.classList.add('on');
+  clearTimeout(tTimer);
+  tTimer = setTimeout(function(){ t.classList.remove('on'); }, 2000);
+}
+
+/* ===================== 音效（可关） ===================== */
+var AC = null;
+function ac(){
+  if(AC === null){
+    try{ AC = new (window.AudioContext || window.webkitAudioContext)(); }
+    catch(e){ AC = false; }
+  }
+  if(AC && AC.state === 'suspended'){ try{ AC.resume(); }catch(e){} }
+  return AC || null;
+}
+function beep(f,dur,type,vol,delay){
+  if(S.mute) return;
+  var c = ac(); if(!c) return;
+  try{
+    var t0 = c.currentTime + (delay||0);
+    var o = c.createOscillator(), g = c.createGain();
+    o.type = type||'sine';
+    o.frequency.setValueAtTime(f, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(vol||0.05, t0+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+    o.connect(g); g.connect(c.destination);
+    o.start(t0); o.stop(t0+dur+0.03);
+  }catch(e){}
+}
+function sfxStart(){
+  beep(300,0.08,'triangle',0.045,0);
+  beep(400,0.08,'triangle',0.04,0.10);
+  beep(520,0.10,'triangle',0.035,0.20);
+}
+function sfxStop(i){
+  beep(620 + i*130, 0.09, 'square', 0.030, 0);
+}
+function sfxWin(){
+  beep(784,0.15,'sine',0.070,0);
+  beep(1046,0.16,'sine',0.055,0.09);
+  beep(1318,0.30,'sine',0.040,0.18);
+}
+function vib(p){ if(navigator.vibrate){ try{ navigator.vibrate(p); }catch(e){} } }
+
+/* ===================== 滚轮渲染 ===================== */
+function reelEls(){ return Array.prototype.slice.call(document.querySelectorAll('#reels .reel')); }
+function rowH(){
+  var r = reelEls()[0];
+  return r ? Math.round(r.clientHeight) : 168;
+}
+function cellHTML(it){
+  if(!it) return '<div class="cell blank"><div class="badge"></div><div class="nm">—</div></div>';
+  var c = colorOf(it);
+  return '<div class="cell">'+
+    '<div class="badge" style="background:radial-gradient(circle at 34% 28%, rgba(255,255,255,.5), rgba(255,255,255,0) 64%), '+c+';color:#fff">'+iconOf(it)+'</div>'+
+    '<div class="nm">'+esc(it.name)+'</div>'+
+    '<div class="tg">'+esc(it.sub)+'</div>'+
+    /* 区域标签永远渲染：没有固定地点的（"不限"）留空占位，否则各列内容会上下错开 */
+    (it.area && it.area!=='不限'
+      ? '<div class="area">'+esc(it.area)+'</div>'
+      : '<div class="area" style="visibility:hidden">·</div>')+
+  '</div>';
+}
+function fillStrip(el,seq){
+  el.innerHTML = seq.map(function(x){ return cellHTML(x); }).join('');
+}
+/* 初始静置：每格先塞几个真实条目，看着像台老虎机，而不是空窗口 */
+function idleReels(){
+  var els = reelEls(), H = rowH();
+  els.forEach(function(el){
+    var src = reelPool(el);
+    if(!src.length) src = LIB;
+    var seq = [];
+    for(var k=0;k<8;k++) seq.push(src[Math.floor(Math.random()*src.length)]);
+    fillStrip(el.querySelector('.strip'), seq);
+    el.querySelector('.strip').style.transition = 'none';
+    el.querySelector('.strip').style.transform = 'translateY(' + (-(2+Math.floor(Math.random()*3))*H) + 'px)';
+  });
+}
+function rollReel(el,item,dur){
+  var strip = el.querySelector('.strip');
+  var H = rowH();
+  var src = reelPool(el);
+  if(!src.length) src = [item];
+  var seq = [];
+  for(var i=0;i<16;i++) seq.push(src[Math.floor(Math.random()*src.length)]);
+  seq.push(item);
+  fillStrip(strip, seq);
+  strip.classList.add('moving');                              /* 转的时候加运动模糊 */
+  strip.style.transition = 'none';
+  strip.style.transform  = 'translateY(0px)';
+  void strip.offsetHeight;                                   /* 强制回流，否则不animate */
+  strip.style.transition = 'transform ' + dur + 's cubic-bezier(.13,.75,.24,1)';
+  strip.style.transform  = 'translateY(' + (-(seq.length-1)*H) + 'px)';
+  setTimeout(function(){ strip.classList.remove('moving'); }, dur*1000 + 40);
+}
+
+/* ===================== 摇 ===================== */
+/* 一整天四格：上午玩 / 中午吃 / 下午玩 / 晚上吃
+   格子的 data-type 顺序必须是 p e p e —— 改这里就要改 tpl.html 里的 .reel */
+var SLOT_LUNCH = 1, SLOT_DINNER = 3;
+var rolls = [null,null,null,null];
+var rolling = false;
+var spun = false;
+
+/* 横幅一句话（招牌下面那行字） */
+function setBanner(txt,pop){
+  var b = document.getElementById('banner');
+  if(!b) return;
+  b.textContent = txt;
+  if(pop){ b.classList.remove('pop'); void b.offsetWidth; b.classList.add('pop'); }
+}
+/* 主按钮里那行字（按钮里还有个小骰子，别整个 textContent 覆盖掉） */
+function spinLabel(txt){
+  var t = document.querySelector('#btnPull .txt');
+  if(t) t.textContent = txt;
+}
+/* 彩带：跟「萌虎幸运机」一套，摇完从天而降 */
+function confetti(){
+  var layer = document.getElementById('confettiLayer');
+  if(!layer) return;
+  var colors = RAMP.concat(['#FFE27A','#FFD98A','#FFAFCE']);
+  for(var i=0;i<16;i++){
+    var c = document.createElement('i');
+    c.className = 'confetti';
+    c.style.left = (3 + Math.random()*94).toFixed(1) + '%';
+    c.style.width  = (6 + Math.random()*5).toFixed(0) + 'px';
+    c.style.height = (9 + Math.random()*7).toFixed(0) + 'px';
+    c.style.background = colors[i % colors.length];
+    c.style.animationDuration = (1.5 + Math.random()*1.1).toFixed(2) + 's';
+    c.style.animationDelay = (Math.random()*0.28).toFixed(2) + 's';
+    layer.appendChild(c);
+    (function(x){ setTimeout(function(){ if(x.parentNode) x.parentNode.removeChild(x); }, 3200); })(c);
+  }
+}
+
+function doSpin(){
+  if(rolling) return;
+  rolling = true;
+  var pull  = document.getElementById('btnPull');
+  var mach  = document.getElementById('machine');
+  var lever = document.getElementById('lever');
+  pull.disabled = true;
+  mach.classList.add('rolling');
+  lever.classList.add('pulled');
+  vib([12,36,12]);
+  sfxStart();
+  setBanner('转啊转…看今天怎么过～');
+
+  var els = reelEls(), used = [], N = els.length;
+  for(var i=0;i<N;i++){
+    var it;
+    if(i===SLOT_LUNCH)       it = pickMeal(used, true);    /* 中午：排除夜宵 */
+    else if(i===SLOT_DINNER) it = pickMeal(used, false);   /* 晚上：可能是夜宵 */
+    else                     it = pickPlay(used, i===0);    /* 第0格是上午，别排长项目 */
+    if(it) used.push(it.id);
+    rolls[i] = it;
+  }
+
+  var longest = 0;
+  for(var j=0;j<N;j++){
+    var d = 1.05 + j*0.26;
+    if(d>longest) longest = d;
+    (function(el,item,delay,idx){
+      setTimeout(function(){
+        rollReel(el,item,delay);
+        setTimeout(function(){ sfxStop(idx); }, delay*1000*0.82);
+      }, 60);
+    })(els[j], rolls[j], d, j);
+  }
+
+  setTimeout(function(){
+    mach.classList.remove('rolling');
+    lever.classList.remove('pulled');
+    els.forEach(function(el){
+      el.classList.add('win');
+      setTimeout(function(){ el.classList.remove('win'); }, 470);
+    });
+    vib(18);
+    sfxWin();
+    confetti();
+
+    rolls.forEach(function(x){ if(!x) return; S.recent.unshift(x.id); });
+    /* 连续摇也不至于把池子摇空：只记最近 60 条 */
+    var seen = {};
+    S.recent = S.recent.filter(function(id){
+      if(seen[id]) return false;
+      seen[id] = true;
+      return true;
+    }).slice(0,60);
+    S.rolls = rolls.map(function(x){ return x ? x.id : null; });
+    S.spins = (S.spins||0) + 1;
+
+    S.nightId = null;                          /* 新的一把，"晚上"那站重新挑 */
+    plan = planOf();                           /* 整天安排在这一刻定稿，后面只渲染不重算 */
+    var lastSeg = plan[plan.length-1];
+    S.nightId = (lastSeg && lastSeg.label === '晚上') ? lastSeg.item.id : null;
+    save();
+
+    document.getElementById('btnDetail').classList.add('on');
+    setBanner('今天的安排出炉啦 ✨', true);
+    spinLabel('再拉一下');
+    pull.disabled = false;
+    rolling = false;
+    spun = true;
+  }, 60 + longest*1000 + 300);
+}
+
+/* ===================== 详情卡片（Step 2） ===================== */
+/* 一整天 = 摇出来的四格 + 自动补的"晚上"一站，共 5 站。
+   时间推法跟桌面版一致：有硬下限（午饭 ≥12:00 / 下午玩 ≥14:00 / 晚饭 ≥18:00 / 晚上 ≥20:00），
+   站与站之间至少留 40 分钟路上时间。 */
+function fmt(m){
+  m = Math.round(m/10)*10;
+  var h = Math.floor(m/60), mi = m%60;
+  return (h<10?'0':'')+h+':'+(mi<10?'0':'')+mi;
+}
+/* 排到半夜以后要写"次日 01:10"，不能印出 25:10 这种怪时间 */
+function fmtWrap(m){
+  m = Math.round(m/10)*10;
+  var next = false;
+  while(m >= 1440){ m -= 1440; next = true; }
+  var h = Math.floor(m/60), mi = m%60;
+  return (next ? '次日 ' : '') + (h<10?'0':'')+h+':'+(mi<10?'0':'')+mi;
+}
+function planOf(){
+  var out = [], t = 10*60, used = [];
+  if(rolls[0]){ out.push({t:t,label:'上午玩',type:'p',item:rolls[0]}); t += rolls[0].dur*60; used.push(rolls[0].id); }
+  if(rolls[1]){ t = Math.max(t+40, 12*60); out.push({t:t,label:'午饭',type:'e',item:rolls[1]}); t += rolls[1].dur*60; used.push(rolls[1].id); }
+  if(rolls[2]){ t = Math.max(t+40, 14*60); out.push({t:t,label:'下午玩',type:'p',item:rolls[2]}); t += rolls[2].dur*60; used.push(rolls[2].id); }
+
+  var din = rolls[3] || pickMeal(used, false);
+  if(din){ t = Math.max(t+40, 18*60); out.push({t:t,label:'晚饭',type:'e',item:din,auto:!rolls[3]}); t += din.dur*60; used.push(din.id); }
+
+  var night = (S.nightId && used.indexOf(S.nightId) < 0) ? byId(S.nightId) : null;   /* 上次挑的那站优先复用 */
+  if(!night) night = pickNight(used);
+  if(night){ t = Math.max(t+40, 20*60); out.push({t:t,label:'晚上',type:night.type,item:night,auto:true}); }
+
+  return out;
+}
+var plan = [];
+
+function renderDetail(){
+  var body = document.getElementById('sheetBody');
+  var sub  = document.getElementById('sheetSub');
+  /* 整天安排是"摇完即定稿"：这里只渲染，不重算，
+     否则每开一次卡片，"晚上"那站会重摇一次，前后看到的不一样 */
+  if(!plan.length) plan = planOf();
+  if(!plan.length){
+    if(body) body.innerHTML = '<div class="tl-empty">还没摇呢～<br>先拉一下那根杆，今天就不用想了。</div>';
+    if(sub) sub.textContent = '';
+    return;
+  }
+  var html = '<div class="tl">';
+  plan.forEach(function(p){
+    var it = p.item;
+    if(!it) return;
+    var meta = [];
+    if(it.area && it.area!=='不限') meta.push(it.area);
+    if(it.dur)   meta.push(it.dur>=24 ? '住一晚' : ('约 '+it.dur+' 小时'));
+    if(it.price) meta.push(it.price===1 ? '便宜' : it.price===2 ? '人均中档' : '人均偏高');
+    var tags = it.tags.slice(0,4).map(function(t){ return '<span class="tg">'+esc(t)+'</span>'; }).join('');
+    html += '<div class="tl-row">'+
+      '<div class="tl-time">'+fmtWrap(p.t)+'</div>'+
+      '<div class="tl-rail"><i style="background:'+colorOf(it)+'"></i><s></s></div>'+
+      '<div class="tl-body">'+
+        '<div class="k '+p.type+'">'+esc(p.label)+'</div>'+
+        (p.auto ? '<span class="auto">自动补的</span>' : '')+
+        '<div class="v">'+esc(it.name)+'</div>'+
+        '<div class="p">'+meta.join(' · ')+'</div>'+
+        (it.tip ? '<div class="tip">'+esc(it.tip)+'</div>' : '')+
+        '<div class="tags">'+tags+'</div>'+
+      '</div></div>';
+  });
+  html += '</div>';
+  if(body) body.innerHTML = html;
+
+  var n = plan.length;
+  var end = plan[n-1].t + (plan[n-1].item.dur||2)*60;
+  if(sub) sub.textContent = dateText() + ' · ' + fmtWrap(plan[0].t) + '—' + fmtWrap(end) + ' · 共 ' + n + ' 站';
+}
+
+function sheetEl(){ return document.getElementById('sheet'); }
+function sheetOpen(){ var s = sheetEl(); return !!s && s.classList.contains('on'); }
+
+function openSheet(){
+  renderDetail();
+  if(!plan.length){ toast('先拉一下拉杆，摇出今天的安排'); return; }
+  var m = document.getElementById('sheetMask'), s = sheetEl();
+  m.classList.add('on'); s.classList.add('on');
+  s.setAttribute('aria-hidden','false');
+  vib(8);
+}
+function closeSheet(){
+  var m = document.getElementById('sheetMask'), s = sheetEl();
+  s.classList.remove('on'); m.classList.remove('on');
+  s.setAttribute('aria-hidden','true');
+  s.style.transform = '';
+  document.getElementById('sheetBody').scrollTop = 0;
+}
+
+/* ===================== 交互 ===================== */
+function bindLever(){
+  var lv = document.getElementById('lever');
+  var dragging = false;
+  lv.addEventListener('pointerdown', function(e){
+    e.preventDefault();
+    ac();                                   /* 在用户手势里解锁音频 */
+    dragging = true;
+    lv.classList.add('pulled');
+    try{ lv.setPointerCapture(e.pointerId); }catch(err){}
+  });
+  lv.addEventListener('pointerup', function(e){
+    if(!dragging) return;
+    dragging = false;
+    doSpin();                               /* 点一下或往下拉一下都算拉杆 */
+  });
+  lv.addEventListener('pointercancel', function(){
+    dragging = false;
+    lv.classList.remove('pulled');
+  });
+}
+
+function bindSound(){
+  var b = document.getElementById('btnSnd');
+  function paint(){
+    b.classList.toggle('dim', !!S.mute);
+    b.textContent = S.mute ? '🔇' : '🔊';
+    b.setAttribute('aria-pressed', S.mute ? 'true' : 'false');
+  }
+  paint();
+  b.addEventListener('click', function(){
+    S.mute = !S.mute;
+    save(); paint();
+    if(!S.mute){ ac(); beep(880,0.12,'sine',0.06,0); }
+  });
+}
+
+function bindDetail(){
+  document.getElementById('btnDetail').addEventListener('click', function(){
+    ac();                       /* 在用户手势里解锁音频 */
+    openSheet();
+  });
+  document.getElementById('sheetMask').addEventListener('click', closeSheet);
+  document.getElementById('sheetClose').addEventListener('click', closeSheet);
+  document.getElementById('sheetAgain').addEventListener('click', function(){
+    closeSheet();
+    ac();
+    setTimeout(doSpin, 140);    /* 先收起卡片，再摇，不然看不到机器转 */
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && sheetOpen()) closeSheet();
+  });
+
+  /* 从把手/标题区往下拖，拖过 78px 就收起 */
+  var s = sheetEl();
+  var sy = 0, dy = 0, drag = false;
+  function down(e){
+    /* 标题栏里的 ✕ 是按钮，别被拖拽手势吃掉点击 */
+    if(e.target && e.target.closest && e.target.closest('.sh-close')) return;
+    drag = true; sy = e.clientY; dy = 0;
+    s.style.transition = 'none';
+    try{ e.currentTarget.setPointerCapture(e.pointerId); }catch(err){}
+  }
+  function move(e){
+    if(!drag) return;
+    dy = Math.max(0, e.clientY - sy);
+    s.style.transform = 'translateY(' + dy + 'px)';
+  }
+  function up(){
+    if(!drag) return;
+    drag = false;
+    s.style.transition = '';
+    /* 先决定收不收，再清 inline transform：
+       清掉之后浏览器会从当前位置动画到目标位置，不会闪一下 */
+    if(dy > 78){ closeSheet(); }         /* closeSheet 里已清 transform */
+    else { s.style.transform = ''; }
+    dy = 0;
+  }
+  [s.querySelector('.sheet-grip'), s.querySelector('.sheet-head')].forEach(function(el){
+    if(!el) return;
+    el.addEventListener('pointerdown', down);
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+  });
+}
+
+function bindPull(){
+  var b = document.getElementById('btnPull');
+  b.addEventListener('click', function(){
+    ac();                    /* 在用户手势里解锁音频 */
+    doSpin();
+  });
+}
+
+/* ===================== 启动 ===================== */
+function dateText(){
+  var d = new Date();
+  var w = ['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];
+  return (d.getMonth()+1) + '月' + d.getDate() + '日 · ' + w;
+}
+/* 招牌上下两排小灯泡 */
+function fillBulbs(){
+  [['bulbsTop',13],['bulbsBot',13]].forEach(function(cfg){
+    var box = document.getElementById(cfg[0]);
+    if(!box) return;
+    var html = '';
+    for(var i=0;i<cfg[1];i++) html += '<span class="bulb"></span>';
+    box.innerHTML = html;
+  });
+}
+
+/* 关掉页面再打开：上次摇的四格还认得出，就接着显示，不用重新摇一遍 */
+function restoreRolls(){
+  if(!S.rolls || S.rolls.length !== 4) return false;
+  var got = 0, next = [null,null,null,null];
+  for(var i=0;i<4;i++){
+    var it = S.rolls[i] ? byId(S.rolls[i]) : null;
+    if(it){ next[i] = it; got++; }
+  }
+  if(got < 4) return false;
+  rolls = next;
+  return true;
+}
+/* 把上次的结果直接摆到窗口里（不动画，落在最后一格） */
+function showStaticResult(){
+  var els = reelEls(), H = rowH();
+  els.forEach(function(el,i){
+    var src = reelPool(el);
+    if(!src.length) src = LIB;
+    var seq = [], item = rolls[i] || src[0];
+    for(var k=0;k<5;k++) seq.push(src[Math.floor(Math.random()*src.length)]);
+    seq.push(item);
+    var strip = el.querySelector('.strip');
+    fillStrip(strip, seq);
+    strip.style.transition = 'none';
+    strip.style.transform = 'translateY(' + (-(seq.length-1)*H) + 'px)';
+  });
+}
+function paintIdle(){ if(spun) showStaticResult(); else idleReels(); }
+
+function boot(){
+  load();
+  buildLib();
+  fillBulbs();
+  document.getElementById('dt').textContent = dateText();
+
+  if(restoreRolls()){
+    spun = true;
+    plan = planOf();
+    document.getElementById('btnDetail').classList.add('on');
+    spinLabel('再拉一下');
+    setBanner('上次摇的还留着，点下面看安排～');
+    showStaticResult();
+  }else{
+    idleReels();
+    setBanner('拉下拉杆，好运降临～');
+  }
+
+  bindLever();
+  bindPull();
+  bindSound();
+  bindDetail();
+
+  /* 横竖屏切换会改滚轮高度，重铺一遍静态画面（摇的过程中不动） */
+  var tm = null;
+  window.addEventListener('resize', function(){
+    clearTimeout(tm);
+    tm = setTimeout(function(){ if(!rolling) paintIdle(); }, 220);
+  });
+
+  if(!LIB.length) toast('内容池没读出来，检查一下 pool.js');
+}
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', boot);
+}else{
+  boot();
+}
+
+/* 给自测用：当前这一把的四个结果 + 摊开后的整天安排 */
+window.JTMGZ = {
+  get rolls(){ return rolls.slice(); },
+  get spun(){ return spun; },
+  get plan(){                                  /* 读定稿的那一份，不重算 */
+    return plan.map(function(p){
+      return { t:p.t, time:fmtWrap(p.t), label:p.label, name:p.item && p.item.name,
+               sub:p.item && p.item.sub, dur:p.item && p.item.dur,
+               tags:p.item ? p.item.tags.slice() : [], auto:!!p.auto };
+    });
+  },
+  get nightPool(){ return LIB.filter(isNightOnly).map(function(it){ return it.name; }); },
+  tips: function(){
+    return rolls.map(function(x){ return x ? { name:x.name, tip:x.tip, area:x.area, dur:x.dur, price:x.price } : null; });
+  }
+};
+
+})();
+
+</script>
+</body>
+</html>
