@@ -26,7 +26,8 @@ var FULL_SUBS  = ['火锅','串串','川菜','家常','面食','烧烤','夜宵'
 
 /* ===================== 状态 ===================== */
 function defState(){
-  return { recent:[], banned:[], fav:[], mute:false, rolls:[null,null,null,null], spins:0, nightId:null };
+  return { recent:[], banned:[], fav:[], mute:false, rolls:[null,null,null,null], spins:0, nightId:null,
+           custom:[], cand:[], ideasSeen:[] };
 }
 var S = defState();
 
@@ -44,12 +45,13 @@ function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} 
 /* ===================== 数据 ===================== */
 var LIB = [];
 var IDX = {};                       /* id -> item，用来把上次存的结果还原回来 */
-function mk(name,type,sub,area,price,dur,tags,tip,id){
+function mk(name,type,sub,area,price,dur,tags,tip,id,src){
   return {
     id:id, name:name, type:type, sub:sub, area:area,
     price:price||2, dur:dur||2,
     tags:String(tags||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean),
-    tip:tip||''
+    tip:tip||'',
+    src:src||'lib'                  /* lib=内容库 / user=手动加的 / idea=从灵感池收的 */
   };
 }
 function buildLib(){
@@ -58,7 +60,14 @@ function buildLib(){
   IDX = {};
   LIB.forEach(function(it){ IDX[it.id] = it; });
 }
-function byId(id){ return IDX[id] || null; }
+/* 可摇的全部条目 = 内容库 + 自己加的（灵感池收进来的也算自己加的） */
+function allItems(){ return LIB.concat(S.custom || []); }
+function byId(id){
+  if(IDX[id]) return IDX[id];
+  var c = S.custom || [];
+  for(var i=0;i<c.length;i++){ if(c[i].id===id) return c[i]; }
+  return null;
+}
 function hasTag(it,t){ return it.tags.indexOf(t)>=0; }
 function subIn(it,arr){ return arr.indexOf(it.sub)>=0; }
 function isNightOnly(it){ return hasTag(it,'夜生活') || it.sub==='酒吧' || it.sub==='夜生活'; }
@@ -71,10 +80,10 @@ function soft(list,fn,min){
 }
 function relaxed(type,skip){
   skip = skip||[];
-  var p = LIB.filter(function(it){
+  var p = allItems().filter(function(it){
     return it.type===type && skip.indexOf(it.id)<0 && S.banned.indexOf(it.id)<0;
   });
-  if(!p.length) p = LIB.filter(function(it){ return it.type===type; });
+  if(!p.length) p = allItems().filter(function(it){ return it.type===type; });
   /* 优先市内（"不限"也算），够多就只用市内的 */
   p = soft(p, function(it){ return it.area==='不限' || CITY.indexOf(it.area)>=0; }, 8);
   /* 优先最近没摇到过的，避免连着重复 */
@@ -115,11 +124,11 @@ function pickMeal(skip,isLunch){ return weighted(mealPool(skip,isLunch)); }
 /* 晚上那一站：只从"夜里才成立"的条目里挑（酒吧 / 夜生活 / 演出） */
 function pickNight(skip){
   skip = skip||[];
-  var p = LIB.filter(function(it){
+  var p = allItems().filter(function(it){
     return isNightOnly(it) && skip.indexOf(it.id)<0 && S.banned.indexOf(it.id)<0;
   });
-  if(p.length < 3) p = LIB.filter(function(it){ return isNightOnly(it) && skip.indexOf(it.id)<0; });
-  if(!p.length)    p = LIB.filter(function(it){ return isNightOnly(it); });
+  if(p.length < 3) p = allItems().filter(function(it){ return isNightOnly(it) && skip.indexOf(it.id)<0; });
+  if(!p.length)    p = allItems().filter(function(it){ return isNightOnly(it); });
   return weighted(p);
 }
 
@@ -454,6 +463,167 @@ function closeSheet(){
   document.getElementById('sheetBody').scrollTop = 0;
 }
 
+/* ===================== 灵感 & 池子 ===================== */
+var EAT_WORDS = ['吃','餐','饭','火锅','串串','烧烤','咖啡','茶','酒','面','粉','甜品','小吃','包','饼','日料','烤肉','brunch','西餐','食堂','早餐','夜宵','汤','鸭','鸡','鱼','牛','饺','抄手','锅盔','兔'];
+var POOL_CAP = 40;                     /* 手机上别一次渲染几百条 */
+var poolTab = 'all', poolQ = '';
+
+var IC_SWAP = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 8h13l-3-3M20 16H7l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+var IC_PLUS = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+var IC_X    = '<svg viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+var IC_STAR = '<svg viewBox="0 0 24 24" fill="none"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9L12 3Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>';
+var IC_UNDO = '<svg viewBox="0 0 24 24" fill="none"><path d="M4 12h16" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>';
+
+function guessType(s){
+  for(var i=0;i<EAT_WORDS.length;i++){
+    if(s.toLowerCase().indexOf(EAT_WORDS[i].toLowerCase())>=0) return 'e';
+  }
+  return 'p';
+}
+function parsePaste(txt){
+  var parts = txt.split(/\n+|。|！|？|；|;|(?:\d{1,2}[\.、)）])/);
+  var out = [], seen = {};
+  parts.forEach(function(s){
+    s = s.trim().replace(/^[-•·*\s]+/,'').replace(/^[\(（].{0,3}[\)）]/,'').trim();
+    if(s.length<2 || s.length>38) return;
+    if(seen[s]) return; seen[s]=1;
+    out.push({ name:s, type:guessType(s) });
+  });
+  return out.slice(0,20);
+}
+function addCustom(name,type,sub,tip,src){
+  var it = mk(name, type, sub||'自定义', '不限', 1, 1.5, '', tip||'',
+              'U'+Date.now()+Math.floor(Math.random()*1000), src||'user');
+  S.custom = S.custom || [];
+  S.custom.unshift(it);
+  return it;
+}
+
+function renderCand(){
+  var box = document.getElementById('candBox'), card = document.getElementById('candCard');
+  if(!card) return;
+  if(!S.cand.length){ card.hidden = true; box.innerHTML = ''; return; }
+  card.hidden = false;
+  document.getElementById('candCount').textContent = S.cand.length + ' 条';
+  box.innerHTML = S.cand.map(function(c,i){
+    return '<div class="item">'+
+      '<button class="bulbtn '+(c.type==='e'?'e':'p')+'" type="button" data-flip="'+i+'" aria-label="切换类型">'+(c.type==='e'?'吃':'玩')+'</button>'+
+      '<div class="bd"><div class="h">'+esc(c.name)+'</div>'+
+        '<div class="s">我猜是'+(c.type==='e'?'吃的':'玩的')+'，点左边那个方块能改</div></div>'+
+      '<div class="op">'+
+        '<button class="obtn add" type="button" data-cadd="'+i+'" aria-label="加进池子">'+IC_PLUS+'</button>'+
+        '<button class="obtn del" type="button" data-cdel="'+i+'" aria-label="不要">'+IC_X+'</button>'+
+      '</div></div>';
+  }).join('');
+}
+
+function renderIdeas(){
+  var all = window.IDEA_RAW || [];
+  var box = document.getElementById('ideaBox');
+  if(!box) return;
+  if(!all.length){ box.innerHTML = '<div class="note">灵感池没读出来，检查一下 ideas.js</div>'; return; }
+  var unseen = [];
+  all.forEach(function(r,i){ if(S.ideasSeen.indexOf('I'+i)<0) unseen.push(i); });
+  if(unseen.length < 6){ S.ideasSeen = []; unseen = all.map(function(_,i){ return i; }); }
+  var pool = unseen.slice(), idx = [];
+  while(idx.length < 6 && pool.length){
+    idx.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  }
+  idx.forEach(function(i){ if(S.ideasSeen.indexOf('I'+i)<0) S.ideasSeen.push('I'+i); });
+  box.innerHTML = idx.map(function(i){
+    var r = all[i];
+    var src = r[8]==='news' ? '<span class="tg b">报道</span>' : '<span class="tg a">AI</span>';
+    return '<div class="item" data-idea="'+i+'">'+
+      '<div class="bul '+(r[1]==='e'?'e':'p')+'">'+(r[1]==='e'?'吃':'玩')+'</div>'+
+      '<div class="bd"><div class="h">'+esc(r[0])+'</div>'+
+        '<div class="s">'+esc(r[3]||'不限')+' · '+(r[5]||2)+' 小时</div>'+
+        (r[7]?'<div class="t">'+esc(r[7])+'</div>':'')+
+        '<div class="tags">'+src+'</div></div>'+
+      '<div class="op">'+
+        '<button class="obtn add" type="button" data-iadd="'+i+'" aria-label="加进池子">'+IC_PLUS+'</button>'+
+        '<button class="obtn" type="button" data-iskip="'+i+'" aria-label="不感兴趣">'+IC_X+'</button>'+
+      '</div></div>';
+  }).join('');
+  save();
+}
+
+function poolListOf(){
+  var list;
+  if(poolTab==='u')       list = (S.custom||[]).slice();
+  else if(poolTab==='x')  list = S.banned.map(byId).filter(Boolean);
+  else                    list = allItems().filter(function(it){ return poolTab==='all' || it.type===poolTab; });
+
+  if(poolQ){
+    var q = poolQ.toLowerCase();
+    list = list.filter(function(it){
+      return (it.name+' '+it.area+' '+it.sub+' '+(it.tags||[]).join(' ')).toLowerCase().indexOf(q)>=0;
+    });
+  }
+  return list;
+}
+function renderPool(){
+  var box = document.getElementById('poolBox');
+  if(!box) return;
+  var list = poolListOf();
+  var more = list.length > POOL_CAP ? list.length - POOL_CAP : 0;
+  list = list.slice(0, POOL_CAP);
+
+  if(!list.length){
+    box.innerHTML = '<div class="empty">这儿没东西。去「灵感」页挑几个，或者在下面手动加一条。</div>';
+  }else{
+    box.innerHTML = list.map(function(it){
+      var banned = S.banned.indexOf(it.id)>=0;
+      var fav = S.fav.indexOf(it.id)>=0;
+      var from = it.src==='lib' ? '内容库' : it.src==='idea' ? '灵感池' : '我加的';
+      return '<div class="item">'+
+        '<div class="bul '+(it.type==='e'?'e':'p')+'">'+(it.type==='e'?'吃':'玩')+'</div>'+
+        '<div class="bd"><div class="h">'+esc(it.name)+'</div>'+
+          '<div class="s">'+esc(it.sub)+' · '+esc(it.area)+' · '+from+'</div>'+
+          (it.tip?'<div class="t">'+esc(it.tip)+'</div>':'')+
+        '</div>'+
+        '<div class="op">'+
+          '<button class="obtn fav'+(fav?' on':'')+'" type="button" data-fav="'+it.id+'" aria-label="常去">'+IC_STAR+'</button>'+
+          '<button class="obtn '+(banned?'add':'del')+'" type="button" data-ban="'+it.id+'" aria-label="'+(banned?'恢复':'拉黑')+'">'+(banned?IC_UNDO:IC_X)+'</button>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+    if(more>0) box.innerHTML += '<div class="note">还有 '+more+' 条没显示，切上面的分类，或者搜名字 / 区域 / 标签。</div>';
+  }
+
+  var st = document.getElementById('statNote');
+  if(st) st.textContent = '内容库 '+LIB.length+' 条 · 我加的 '+(S.custom||[]).length+' 条 · 拉黑 '+
+                          S.banned.length+' 条 · 最近摇过 '+S.recent.length+' 条';
+}
+
+/* ---------- 管理页开关 ---------- */
+var curTab = 'idea';
+function manageEl(){ return document.getElementById('manage'); }
+function manageOpen(){ var p = manageEl(); return !!p && p.classList.contains('on'); }
+function switchTab(t){
+  curTab = t;
+  Array.prototype.forEach.call(document.querySelectorAll('#pgTabs .pg-tab'), function(b){
+    b.classList.toggle('on', b.getAttribute('data-t')===t);
+  });
+  document.getElementById('secIdea').hidden = (t !== 'idea');
+  document.getElementById('secPool').hidden = (t !== 'pool');
+  if(t==='pool') renderPool();
+}
+function openManage(){
+  var p = manageEl();
+  renderIdeas(); renderCand(); renderPool();
+  switchTab(curTab);
+  p.classList.add('on');
+  p.setAttribute('aria-hidden','false');
+  document.getElementById('mgBody').scrollTop = 0;
+  vib(8);
+}
+function closeManage(){
+  var p = manageEl();
+  p.classList.remove('on');
+  p.setAttribute('aria-hidden','true');
+  document.getElementById('mgBody').scrollTop = 0;
+}
+
 /* ===================== 交互 ===================== */
 function bindLever(){
   var lv = document.getElementById('lever');
@@ -549,6 +719,148 @@ function bindPull(){
   });
 }
 
+function bindManage(){
+  document.getElementById('btnManage').addEventListener('click', function(){ ac(); openManage(); });
+  document.getElementById('mgClose').addEventListener('click', closeManage);
+  document.getElementById('pgTabs').addEventListener('click', function(e){
+    var b = e.target.closest('.pg-tab'); if(!b) return;
+    switchTab(b.getAttribute('data-t'));
+  });
+
+  /* ---- 灵感：粘贴解析 ---- */
+  document.getElementById('btnParse').addEventListener('click', function(){
+    var t = document.getElementById('pasteBox').value.trim();
+    if(!t){ toast('先粘点东西进来'); return; }
+    var arr = parsePaste(t);
+    if(!arr.length){ toast('没解析出条目，一行一个试试'); return; }
+    S.cand = arr; save(); renderCand();
+    document.getElementById('pasteBox').value = '';
+    toast('解析出 '+arr.length+' 条，确认一下');
+  });
+  document.getElementById('btnPasteClear').addEventListener('click', function(){
+    document.getElementById('pasteBox').value = '';
+  });
+  document.getElementById('candBox').addEventListener('click', function(e){
+    var f = e.target.closest('[data-flip]'), a = e.target.closest('[data-cadd]'), d = e.target.closest('[data-cdel]');
+    if(f){
+      var i = Number(f.getAttribute('data-flip'));
+      S.cand[i].type = S.cand[i].type==='e' ? 'p' : 'e';
+      save(); renderCand();
+    }else if(a){
+      var j = Number(a.getAttribute('data-cadd'));
+      addCustom(S.cand[j].name, S.cand[j].type);
+      S.cand.splice(j,1); save(); renderCand(); renderPool();
+      toast('加进池子了');
+    }else if(d){
+      S.cand.splice(Number(d.getAttribute('data-cdel')),1); save(); renderCand();
+    }
+  });
+  document.getElementById('btnCandAll').addEventListener('click', function(){
+    var n = S.cand.length;
+    S.cand.forEach(function(c){ addCustom(c.name, c.type); });
+    S.cand = []; save(); renderCand(); renderPool();
+    toast('加了 '+n+' 条');
+  });
+
+  /* ---- 灵感：换一批 ---- */
+  document.getElementById('btnMoreIdeas').addEventListener('click', function(){ renderIdeas(); });
+  document.getElementById('ideaBox').addEventListener('click', function(e){
+    var a = e.target.closest('[data-iadd]'), k = e.target.closest('[data-iskip]');
+    if(a){
+      var i = Number(a.getAttribute('data-iadd')), r = (window.IDEA_RAW||[])[i];
+      if(!r) return;
+      addCustom(r[0], r[1], r[2], r[7], 'idea');
+      if(S.ideasSeen.indexOf('I'+i)<0) S.ideasSeen.push('I'+i);
+      save(); renderPool();
+      var row = a.closest('.item');
+      if(row) row.classList.add('off');
+      a.disabled = true;
+      toast('已收进池子，摇的时候会摇到');
+    }else if(k){
+      var j = k.getAttribute('data-iskip');
+      if(S.ideasSeen.indexOf('I'+j)<0) S.ideasSeen.push('I'+j);
+      save();
+      var row2 = k.closest('.item');
+      if(row2) row2.style.display = 'none';
+    }
+  });
+
+  /* ---- 池子 ---- */
+  document.getElementById('poolSeg').addEventListener('click', function(e){
+    var b = e.target.closest('button'); if(!b) return;
+    poolTab = b.getAttribute('data-v');
+    var seg = this;
+    Array.prototype.forEach.call(seg.querySelectorAll('button'), function(x){ x.classList.toggle('on', x===b); });
+    renderPool();
+  });
+  document.getElementById('poolSearch').addEventListener('input', function(){
+    poolQ = this.value.trim(); renderPool();
+  });
+  document.getElementById('poolBox').addEventListener('click', function(e){
+    var f = e.target.closest('[data-fav]'), b = e.target.closest('[data-ban]');
+    if(f){
+      var id = f.getAttribute('data-fav'), i = S.fav.indexOf(id);
+      if(i>=0) S.fav.splice(i,1); else S.fav.push(id);
+      save(); renderPool();
+      toast(i>=0 ? '取消「常去」了' : '标成「常去」，更容易摇到');
+    }else if(b){
+      var id2 = b.getAttribute('data-ban'), j = S.banned.indexOf(id2);
+      if(j>=0) S.banned.splice(j,1); else S.banned.push(id2);
+      save(); renderPool();
+      toast(j>=0 ? '恢复了' : '拉黑了，不会再摇到');
+    }
+  });
+  document.getElementById('addType').addEventListener('click', function(e){
+    var b = e.target.closest('.chip'); if(!b) return;
+    var box = this;
+    Array.prototype.forEach.call(box.querySelectorAll('.chip'), function(x){ x.classList.toggle('on', x===b); });
+  });
+  document.getElementById('btnAdd').addEventListener('click', function(){
+    var n = document.getElementById('addName').value.trim();
+    if(!n){ toast('写个名字'); return; }
+    var t = document.querySelector('#addType .chip.on').getAttribute('data-v');
+    addCustom(n, t);
+    document.getElementById('addName').value = '';
+    save(); renderPool();
+    toast('加好了，摇的时候会摇到');
+  });
+
+  /* ---- 维护 ---- */
+  document.getElementById('btnResetRecent').addEventListener('click', function(){
+    S.recent = []; save(); renderPool();
+    toast('「摇过的」记录清了，老地方会重新出现');
+  });
+  var armed = null;
+  document.getElementById('btnResetAll').addEventListener('click', function(){
+    var b = this;
+    if(!armed){
+      armed = setTimeout(function(){ armed = null; b.textContent = '恢复出厂'; }, 4000);
+      b.textContent = '再点一次确认';
+      toast('会清掉你自己加的所有条目，确定吗？');
+      return;
+    }
+    clearTimeout(armed); armed = null;
+    b.textContent = '恢复出厂';
+    localStorage.removeItem(KEY);
+    S = defState();
+    document.getElementById('pasteBox').value = '';
+    document.getElementById('poolSearch').value = '';
+    poolQ = ''; poolTab = 'all';
+    Array.prototype.forEach.call(document.querySelectorAll('#poolSeg button'), function(x){
+      x.classList.toggle('on', x.getAttribute('data-v')==='all');
+    });
+    renderIdeas(); renderCand(); renderPool();
+    document.getElementById('btnDetail').classList.remove('on');
+    rolls = [null,null,null,null]; plan = []; spun = false;
+    idleReels(); spinLabel('拉一下'); setBanner('拉下拉杆，好运降临～');
+    toast('已恢复出厂');
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && manageOpen()) closeManage();
+  });
+}
+
 /* ===================== 启动 ===================== */
 function dateText(){
   var d = new Date();
@@ -617,6 +929,7 @@ function boot(){
   bindPull();
   bindSound();
   bindDetail();
+  bindManage();
 
   /* 横竖屏切换会改滚轮高度，重铺一遍静态画面（摇的过程中不动） */
   var tm = null;
@@ -645,7 +958,20 @@ window.JTMGZ = {
                tags:p.item ? p.item.tags.slice() : [], auto:!!p.auto };
     });
   },
-  get nightPool(){ return LIB.filter(isNightOnly).map(function(it){ return it.name; }); },
+  get nightPool(){ return allItems().filter(isNightOnly).map(function(it){ return it.name; }); },
+  get custom(){ return (S.custom||[]).slice(); },
+  get banned(){ return S.banned.slice(); },
+  get fav(){ return S.fav.slice(); },
+  get cand(){ return (S.cand||[]).slice(); },
+  get poolSize(){ return allItems().length; },
+  get ideasShown(){ return document.querySelectorAll('#ideaBox .item').length; },
+  get poolShown(){ return document.querySelectorAll('#poolBox .item').length; },
+  /* 某个类型当前真正会被摇到的条目名字（跟摇号用的是同一套过滤） */
+  rollPool: function(type){ return relaxed(type||'p', []).map(function(it){ return it.name; }); },
+  canRoll: function(name){
+    return allItems().some(function(it){ return it.name===name; });
+  },
+  reset: function(){ localStorage.removeItem(KEY); S = defState(); },
   tips: function(){
     return rolls.map(function(x){ return x ? { name:x.name, tip:x.tip, area:x.area, dur:x.dur, price:x.price } : null; });
   }

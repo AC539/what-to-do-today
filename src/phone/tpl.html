@@ -25,7 +25,12 @@
 
   <div class="topbar">
     <div class="date-pill" id="dt">—</div>
-    <button class="icon-btn" id="btnSnd" type="button" aria-label="声音开关">🔊</button>
+    <div class="tb-right">
+      <button class="icon-btn" id="btnSnd" type="button" aria-label="声音开关">🔊</button>
+      <button class="icon-btn" id="btnManage" type="button" aria-label="灵感和池子">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h10M4 12h16M4 17h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M18.5 15v6M15.5 18h6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
   </div>
 
   <div class="marea">
@@ -110,11 +115,88 @@
   </div>
 </section>
 
+<!-- ===== 灵感 / 池子：全屏管理页 ===== -->
+<section class="page" id="manage" role="dialog" aria-modal="true" aria-label="灵感和池子" aria-hidden="true">
+  <div class="page-grip"></div>
+  <div class="page-head">
+    <div class="pg-tabs" id="pgTabs">
+      <button class="pg-tab on" data-t="idea" type="button">灵感</button>
+      <button class="pg-tab" data-t="pool" type="button">池子</button>
+    </div>
+    <button class="pg-close" id="mgClose" type="button" aria-label="关闭">✕</button>
+  </div>
+
+  <div class="page-body" id="mgBody">
+
+    <!-- ---------- 灵感 ---------- -->
+    <section class="pg-sec" id="secIdea">
+      <div class="card">
+        <div class="card-t">粘贴一个点子进来</div>
+        <textarea id="pasteBox" rows="3" placeholder="刷到好玩的、朋友推荐的，直接粘这里。一行一个，用句号分开也行。"></textarea>
+        <div class="row2">
+          <button class="btn2 ghost" id="btnPasteClear" type="button">清空</button>
+          <button class="btn2 pri" id="btnParse" type="button">解析成条目</button>
+        </div>
+      </div>
+
+      <div class="card" id="candCard" hidden>
+        <div class="card-t">待确认<em id="candCount"></em></div>
+        <div class="list" id="candBox"></div>
+        <button class="btn2 pri wide" id="btnCandAll" type="button">全部加进池子</button>
+      </div>
+
+      <div class="card">
+        <div class="card-t">换一批灵感<em class="lnk" id="btnMoreIdeas">换一批</em></div>
+        <div class="list" id="ideaBox"></div>
+        <div class="note">标「报道」的是从公开报道整理的，标「AI」的是生成的。去之前都建议先搜一下确认还在不在。</div>
+      </div>
+    </section>
+
+    <!-- ---------- 池子 ---------- -->
+    <section class="pg-sec" id="secPool" hidden>
+      <div class="card">
+        <input type="search" id="poolSearch" placeholder="搜名字 / 区域 / 标签" autocomplete="off">
+        <div class="seg" id="poolSeg">
+          <button class="on" data-v="all" type="button">全部</button>
+          <button data-v="p" type="button">玩的</button>
+          <button data-v="e" type="button">吃的</button>
+          <button data-v="u" type="button">我加的</button>
+          <button data-v="x" type="button">拉黑</button>
+        </div>
+        <div class="list" id="poolBox"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-t">手动加一条</div>
+        <input type="text" id="addName" placeholder="名字，比如「家楼下新开的串串」" autocomplete="off">
+        <div class="chips" id="addType">
+          <button class="chip on" data-v="p" type="button">玩的</button>
+          <button class="chip" data-v="e" type="button">吃的</button>
+        </div>
+        <button class="btn2 pri wide" id="btnAdd" type="button">加进池子</button>
+      </div>
+
+      <div class="card">
+        <div class="card-t">维护</div>
+        <div class="row2">
+          <button class="btn2 ghost" id="btnResetRecent" type="button">清空「摇过的」</button>
+          <button class="btn2 warn" id="btnResetAll" type="button">恢复出厂</button>
+        </div>
+        <div class="note" id="statNote"></div>
+      </div>
+    </section>
+
+  </div>
+</section>
+
 <div id="toast"></div>
 <div class="confetti-layer" id="confettiLayer"></div>
 
 <script>
 /*POOL*/
+</script>
+<script>
+/*IDEAS*/
 </script>
 <script>
 /*APP*/

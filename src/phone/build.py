@@ -23,9 +23,10 @@ def read(name):
 def main():
     tpl = read("tpl.html")
     parts = {
-        "/*CSS*/":  read("style.css"),
-        "/*POOL*/": read("pool.js"),
-        "/*APP*/":  read("app.js"),
+        "/*CSS*/":   read("style.css"),
+        "/*POOL*/":  read("pool.js"),
+        "/*IDEAS*/": read("ideas.js"),
+        "/*APP*/":   read("app.js"),
     }
     for token, content in parts.items():
         if token not in tpl:
