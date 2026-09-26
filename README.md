@@ -46,6 +46,16 @@ python build.py            # 电脑版，产物在项目根目录
 cd phone && python build.py  # 手机版，产物在 phone/
 ```
 
+改完推上去就更新了线上页面：
+
+```bash
+git add -A && git commit -m "加了几个新地方"
+git push
+```
+
+`github.com` 在部分网络下直连不稳（443 会被重置）。推不上去时，本地另有一个走 `api.github.com` 的部署脚本可以代替 push：
+它先逐个比对 blob / tree / commit 的 sha，全部一致才更新分支，所以线上和本地永远是同一个提交（这种脚本涉及令牌，不放进仓库）。
+
 ## 说明
 
 摇出来的只是灵感，不是保证。营业时间、预约情况出门前建议电话确认一下。
